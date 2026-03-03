@@ -1,0 +1,28 @@
+    <div className="lg:w-1/2">
+            <h2 className="text-brand-orange font-black text-xs uppercase tracking-[0.6em] mb-4">
+              Ecossistema 
+            </h2>
+            <h3 className="text-5xl md:text-6xl font-black text-gray-900 leading-tight mb-8">
+              Tudo o que você precisa para uma <br />
+              <span className="text-brand-orange">estufa confiável e funcional.</span>
+            </h3>
+            <p className="text-gray-500 text-lg mb-10 max-w-md">
+              Explore o ecossistema completo do SafeTemp. Alternamos entre análise de dados e infraestrutura robusta.
+            </p>
+            
+            {/* Controles do Carrossel (Setas) */}
+            <div className="flex gap-4">
+              <button 
+                onClick={() => paginate(-1)}
+                className="p-4 rounded-full border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button 
+                onClick={() => paginate(1)}
+                className="p-4 rounded-full border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all"
+              >
+                <ChevronRight size={24} />
+              </button>
+            </div>
+          </div>

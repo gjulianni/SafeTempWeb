@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
 import { FileSpreadsheet, FlaskConical, CalendarSearch, DownloadCloud } from 'lucide-react';
-import { LuTrendingUp } from 'react-icons/lu';
+import { LuArrowUpRight } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 
 const subItems = [
   {
-    titulo: 'Relatórios Diários',
+    titulo: 'Relatórios',
     desc: 'Listagem detalhada de todos os registros das últimas 24h.',
     icon: FileSpreadsheet,
-    path: '/historico/diario',
+    path: '/historico/relatorios',
     cor: 'text-blue-500'
   },
   {
@@ -19,7 +19,7 @@ const subItems = [
     cor: 'text-purple-500'
   },
   {
-    titulo: 'Consulta por Data',
+    titulo: 'Consulta de Dados',
     desc: 'Filtros personalizados e geração de gráficos históricos.',
     icon: CalendarSearch,
     path: '/historico/busca',
@@ -43,7 +43,7 @@ const HistoryMegaMenu = () => {
       animate={{ height: 'auto', opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="absolute top-full left-0 right-0 bg-white  shadow-[0_20px_40px_rgba(0,0,0,0.08)] border-x border-b border-gray-100 overflow-hidden z-50"
+      className="absolute top-full left-0 right-0 bg-white shadow-[0_20px_40px_rgba(0,0,0,0.08)] border-x border-b border-gray-100 overflow-hidden z-50"
     >
      <div className="max-w-7xl mx-auto p-12 grid grid-cols-3 gap-16">
         
@@ -52,7 +52,7 @@ const HistoryMegaMenu = () => {
             Histórico
           </h5>
           <div className="flex flex-col gap-2">
-            {[subItems[0], subItems[1]].map((item) => (
+            {[subItems[0], subItems[2]].map((item) => (
               <button
                 key={item.titulo}
                 onClick={() => navigate(item.path)}
@@ -79,7 +79,7 @@ const HistoryMegaMenu = () => {
             Ferramentas de Pesquisa
           </h5>
           <div className="flex flex-col gap-2">
-            {[subItems[2], subItems[3]].map((item) => (
+            {[subItems[1], subItems[3]].map((item) => (
               <button
                 key={item.titulo}
                 onClick={() => navigate(item.path)}
@@ -101,21 +101,26 @@ const HistoryMegaMenu = () => {
           </div>
         </div>
 
-        {/* Coluna 3: Destaque / Promoção (Igual à imagem da Lightdash) */}
-        <div className="flex flex-col gap-4">
-          <div className="bg-gradient-to-br from-[#4b2a59] to-[#2d1936] p-6 rounded-[2rem] text-white relative overflow-hidden h-full flex flex-col justify-end">
-             <div className="absolute top-4 right-4 bg-white/10 p-2 rounded-lg backdrop-blur-md">
-                <LuTrendingUp className="text-brand-orange" size={20} />
-             </div>
-             <h4 className="font-black text-lg mb-2">Análise 2026</h4>
-             <p className="text-xs text-purple-100/70 mb-4 font-medium">
-                O SafeTemp processou mais de 31.000 registros este mês com 99% de precisão.
-             </p>
-             <button className="w-full py-2 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-opacity">
-                Ver Estatísticas
-             </button>
-          </div>
-        </div>
+<div className="flex flex-col gap-4">
+  <div className="bg-[#282735] p-7 rounded-[0.1em] text-white relative overflow-hidden h-full flex flex-col justify-end group shadow-2xl border border-white/5">
+    
+    <div className="absolute -top-4 -right-4 w-20 h-20 bg-gradient-to-br from-brand-purple to-[#6b3e7d] opacity-80 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 rounded-2xl rotate-45" />
+    
+    <div className="absolute top-1/2 -right-3 w-10 h-10 bg-gradient-to-tr from-brand-orange to-[#ff914d] opacity-60 group-hover:-translate-y-2 transition-transform duration-500 rounded-lg -rotate-12" />
+    
+    <div className="absolute -bottom-3 right-16 w-12 h-12 bg-brand-purple/30 backdrop-blur-sm border border-white/10 rounded-xl rotate-12 group-hover:opacity-100 transition-opacity" />
+
+    <div className="relative z-10 cursor-pointer">
+      <div className='flex flex-row max-w-full items-center gap-3'>
+      <h4 className="font-black text-2xl mb-2 tracking-tight">Insights Ativos</h4>
+      <h4 className='font-black text-2xl tracking-tight mb-1'> <LuArrowUpRight /></h4>
+      </div>
+      <p className="text-[12px] text-gray-400 mb-10 font-flat leading-relaxed max-w-[90%] tracking-[0.1em]">
+        Identifique instabilidades com o sistema SafeTemp
+      </p>
+    </div>
+  </div>
+</div>
 
       </div>
       <div className="bg-gray-50/50 p-4 mt-2 rounded-b-3xl text-center border-t border-gray-100">

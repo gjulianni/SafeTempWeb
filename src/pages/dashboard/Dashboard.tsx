@@ -98,7 +98,7 @@ const values = data.records.map(r => r.value);
   <div className="flex justify-between items-start mb-5">
     <div>
       <h3 className="text-[1.1rem] font-semibold text-[#333333]">Distribuição de Temperatura</h3>
-      <p className="text-[0.85rem] text-[#8a8a8a] mt-1">Ajuste as faixas de análise térmica</p>
+      <p className="text-[0.85rem] text-[#8a8a8a] mt-1">Faixas personalizadas de distribuição de temperatura</p>
     </div>
   </div>
 

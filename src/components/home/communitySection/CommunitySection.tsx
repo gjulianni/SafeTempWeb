@@ -13,7 +13,7 @@ const CommunitySection = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % roles.length);
-    }, 5500);
+    }, 3500);
     return () => clearInterval(interval);
   }, []);
 

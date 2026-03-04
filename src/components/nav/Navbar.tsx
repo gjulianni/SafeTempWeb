@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/auth/authContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UserDropdown from './dropdown/UserDropdown';
 import HistoryMegaMenu from './history/HistoryMegaMenu';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 
 
 const linksNavegacao = [
@@ -37,18 +37,35 @@ const Navbar = () => {
   }
 
  return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center p-4">
+   <nav className={`
+      fixed top-0 left-0 right-0 z-50 flex justify-center transition-all duration-500 ease-in-out
+      ${activeMenu ? 'p-0' : 'p-4'} 
+    `}>
       {activeMenu && (
         <div 
           className="fixed inset-0 z-40 cursor-default" 
           onClick={() => setActiveMenu(null)} 
         />
       )}
-      <div className={`
-  relative w-full max-w-7xl bg-white/80 backdrop-blur-md border border-white/20 shadow-lg px-6 py-3 z-50 transition-all duration-300
-  ${activeMenu ? 'rounded-t-[2rem]' : 'rounded-[2rem]'} 
-`}>
-        <div className="flex justify-between items-center">
+      <AnimatePresence>
+    {activeMenu && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setActiveMenu(null)}
+        className="fixed inset-0 bg-black/60 z-30 cursor-default" 
+      />
+    )}
+  </AnimatePresence>
+     <div className={`
+        relative w-full bg-white backdrop-blur-md border border-white/20 shadow-lg px-6 py-3 z-40 transition-all duration-500 ease-in-out
+        ${activeMenu 
+          ? 'max-w-full rounded-none border-x-0 border-t-0 shadow-xl' 
+          : 'max-w-7xl rounded-[2.5rem]'
+        }
+      `}>
+        <div className="flex justify-between items-center max-w-7xl mx-auto">
           
           <div className="flex justify-between items-center">
           <div className="flex items-center gap-2 group cursor-pointer">

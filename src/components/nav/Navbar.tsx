@@ -1,22 +1,32 @@
 import { useState } from 'react';
-import { LayoutDashboard, History, GitCompare, Settings, Menu, X, User } from 'lucide-react';
+import { LayoutDashboard, History, GitCompare, Settings, Menu, X, ChevronDown } from 'lucide-react';
 import logoSafetemp from '../../assets/logost.png';
 import { useAuth } from '../../contexts/auth/authContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import UserDropdown from './dropdown/UserDropdown';
+import HistoryMegaMenu from './history/HistoryMegaMenu';
+import { AnimatePresence } from 'framer-motion';
 
 
 const linksNavegacao = [
-  { nome: 'Dashboard', path: '#dashboard', icon: LayoutDashboard, ativo: true },
-  { nome: 'Histórico', path: '#historico', icon: History, ativo: false },
-  { nome: 'Comparações', path: '#comparacoes', icon: GitCompare, ativo: false },
-  { nome: 'Configurações', path: '#config', icon: Settings, ativo: false },
+  { nome: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { nome: 'Histórico', path: '/historico', icon: History },
+  { nome: 'Comparações', path: '/comparacoes', icon: GitCompare },
+  { nome: 'Configurações', path: '/config', icon: Settings },
 ];
 
 const Navbar = () => {
+
   const [isOpen, setIsOpen] = useState(false);
-  const { isAuthenticated, logout } = useAuth();
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isAtivo = (path: string) => location.pathname === path;
+  const toggleMenu = (menuName: string) => {
+    setActiveMenu(activeMenu === menuName ? null : menuName);
+  };
 
   const handleLoginClick = () => {
     navigate('/login')
@@ -26,35 +36,71 @@ const Navbar = () => {
     navigate('/home');
   }
 
-  return (
+ return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center p-4">
-      <div className="w-full max-w-7xl bg-white/80 backdrop-blur-md border border-white/20 shadow-lg rounded-2xl px-6 py-3">
+      {activeMenu && (
+        <div 
+          className="fixed inset-0 z-40 cursor-default" 
+          onClick={() => setActiveMenu(null)} 
+        />
+      )}
+      <div className={`
+  relative w-full max-w-7xl bg-white/80 backdrop-blur-md border border-white/20 shadow-lg px-6 py-3 z-50 transition-all duration-300
+  ${activeMenu ? 'rounded-t-[2rem]' : 'rounded-[2rem]'} 
+`}>
         <div className="flex justify-between items-center">
           
+          <div className="flex justify-between items-center">
           <div className="flex items-center gap-2 group cursor-pointer">
-            <img 
-              className="h-10 w-auto group-hover:scale-105 transition-transform" 
-              src={logoSafetemp} 
-              alt="SafeTemp Logo" 
+            <img
+              className="h-10 w-auto group-hover:scale-105 transition-transform"
+              src={logoSafetemp}
+              alt="SafeTemp Logo"
               onClick={handleHomeClick}
             />
           </div>
+          </div>
+            <div className="hidden md:flex items-center gap-2">
+            {linksNavegacao.map((link) => {
+              const ativo = isAtivo(link.path);
+              const temSubmenu = link.nome === 'Histórico' || link.nome === 'Comparações';
+              const isOpen = activeMenu === link.nome;
 
-          <div className="hidden md:flex items-center gap-2">
-            {linksNavegacao.map((link) => (
-              <a
-                key={link.nome}
-                href={link.path}
-                className={`flex items-center gap-2 px-6 py-2 rounded-xl text-md font-semibold transition-all duration-300
-                  ${link.ativo 
-                    ? 'bg-brand-purple text-white shadow-md shadow-brand-purple/20' 
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-brand-purple'
-                  }`}
-              >
-                <link.icon size={18} />
-                {link.nome}
-              </a>
-            ))}
+              return (
+                <div key={link.nome} className="relative">
+                  <button
+                    onClick={() => {
+                      if (temSubmenu) {
+                        toggleMenu(link.nome);
+                      } else {
+                        setActiveMenu(null);
+                        navigate(link.path);
+                      }
+                    }}
+                    className={`
+                      relative group overflow-hidden cursor-pointer flex items-center gap-2 px-6 py-2 rounded-xl text-md font-semibold transition-all duration-500
+                      ${ativo || isOpen ? 'text-white' : 'text-gray-600 hover:text-white transition-all duration-100'}
+                    `}
+                  >
+                    <span className={`
+                      absolute inset-0 bg-brand-purple transition-transform duration-200 ease-out z-0
+                      ${ativo || isOpen ? 'scale-100' : 'scale-0 group-hover:scale-100'}
+                    `} style={{ transformOrigin: 'center' }} />
+
+                    <span className="relative z-10 flex items-center gap-2">
+                      <link.icon size={18} />
+                      {link.nome}
+                      {temSubmenu && (
+                        <ChevronDown 
+                          size={14} 
+                          className={`ml-1 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} 
+                        />
+                      )}
+                    </span>
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           <div className="flex items-center gap-4">
@@ -74,25 +120,9 @@ const Navbar = () => {
             </button>
           </div>
         </div>
-
-        {isOpen && (
-          <div className="md:hidden mt-4 pt-4 border-t border-gray-100 space-y-2 animate-in fade-in slide-in-from-top-4">
-            {linksNavegacao.map((link) => (
-              <a
-                key={link.nome}
-                href={link.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-colors ${
-                  link.ativo 
-                  ? 'bg-purple-50 text-brand-purple border-l-4 border-brand-purple' 
-                  : 'text-gray-500 hover:bg-gray-50'
-                }`}
-              >
-                <link.icon size={20} />
-                {link.nome}
-              </a>
-            ))}
-          </div>
-        )}
+        <AnimatePresence>
+        {activeMenu === 'Histórico' && <HistoryMegaMenu />}
+      </AnimatePresence>
       </div>
     </nav>
   );

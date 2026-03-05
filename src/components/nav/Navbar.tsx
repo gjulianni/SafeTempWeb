@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LayoutDashboard, History, GitCompare, Settings, Menu, X, ChevronDown } from 'lucide-react';
 import logoSafetemp from '../../assets/logost.png';
 import { useAuth } from '../../contexts/auth/authContext';
@@ -6,6 +6,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import UserDropdown from './dropdown/UserDropdown';
 import HistoryMegaMenu from './history/HistoryMegaMenu';
 import { AnimatePresence, motion } from 'framer-motion';
+import type { Notification } from '../../utils/types/notification';
+import { getNotifications } from '../../hooks/useNotification';
+import { NotificationButton, NotificationInbox } from './notification/NotificationInbox';
+import api from '../../services/api';
 
 
 const linksNavegacao = [
@@ -19,6 +23,9 @@ const Navbar = () => {
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isInboxOpen, setIsInboxOpen] = useState(false);
+
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -35,6 +42,30 @@ const Navbar = () => {
   const handleHomeClick = () => {
     navigate('/home');
   };
+
+  const loadNotifications = async () => {
+    const res = await getNotifications();
+    setNotifications(res.data);
+  };
+
+    useEffect(() => {
+    loadNotifications();
+  }, []);
+ const unreadCount = notifications.filter(n => !n.read).length;
+
+ const handleMarkAsRead = async () => {
+  try {
+ 
+    await api.patch('notifications/read');
+
+    setNotifications(prevNotifications => 
+      prevNotifications.map(n => ({ ...n, read: true }))
+    );
+
+  } catch (error) {
+    console.error("Erro ao marcar notificações como lidas:", error);
+  }
+};
 
  return (
    <nav className={`
@@ -77,7 +108,7 @@ const Navbar = () => {
             />
           </div>
           </div>
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden md:flex items-center">
             {linksNavegacao.map((link) => {
               const ativo = isAtivo(link.path);
               const temSubmenu = link.nome === 'Histórico' || link.nome === 'Comparações';
@@ -95,7 +126,7 @@ const Navbar = () => {
                       }
                     }}
                     className={`
-                      relative group overflow-hidden cursor-pointer flex items-center gap-2 px-6 py-2 rounded-xl text-md font-semibold transition-all duration-500
+                      relative group overflow-hidden cursor-pointer flex items-center gap-2 px-4 py-2 rounded-xl text-md font-semibold transition-all duration-500
                       ${ativo || isOpen ? 'text-white' : 'text-gray-600 hover:text-white transition-all duration-100'}
                     `}
                   >
@@ -121,6 +152,21 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {isAuthenticated && (
+                             <div className="relative">
+        <NotificationButton 
+          onPress={() => setIsInboxOpen(!isInboxOpen)} 
+          unreadCount={unreadCount} 
+        />
+
+        <NotificationInbox 
+          isOpen={isInboxOpen}
+          onClose={() => setIsInboxOpen(false)}
+          notifications={notifications}
+          onMarkAsRead={handleMarkAsRead}
+        />
+      </div>
+            )}
             {isAuthenticated ? (
               <UserDropdown />
             ) : (
@@ -141,6 +187,7 @@ const Navbar = () => {
         {activeMenu === 'Histórico' && <HistoryMegaMenu />}
       </AnimatePresence>
       </div>
+      
     </nav>
   );
 };

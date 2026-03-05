@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { TrendingUp, TrendingDown, Minus, Zap, Activity, Waves, Clock } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Zap, Activity, Waves, Clock, DoorClosed } from 'lucide-react';
 import { useDashboard } from '../../../hooks/useDashboard';
 
 const DashboardCard = () => {
@@ -8,12 +8,16 @@ const DashboardCard = () => {
   const [trend, setTrend] = useState({ icon: Minus, color: 'text-gray-400', text: 'Estável' });
 
 
-  const getStability = (std: number) => {
-    if (std < 1) return { label: "Alta Estabilidade", color: "text-green-500", Icon: Activity };
-    if (std < 2.5) return { label: "Oscilação Normal", color: "text-yellow-500", Icon: Waves };
-    return { label: "Alta Instabilidade", color: "text-red-500", Icon: Zap };
-  };
+const getStability = (std: number | null | undefined) => {
+  if (std === null || std === undefined) {
+    return { label: 'Sem dados disponíveis', color: "text-gray-400", Icon: DoorClosed };
+  }
 
+  if (std < 1) return { label: "Alta Estabilidade", color: "text-green-500", Icon: Activity };
+  if (std < 2.5) return { label: "Oscilação Normal", color: "text-yellow-500", Icon: Waves };
+  
+  return { label: "Alta Instabilidade", color: "text-red-500", Icon: Zap };
+};
   const getTimeDifference = (timestamp: string | undefined) => {
     if (!timestamp) return "Desconhecido";
   
@@ -50,9 +54,11 @@ const DashboardCard = () => {
   }, [data?.lastRecord.value]);
 
   if (isLoading || !data) return <div className="h-96 w-full bg-gray-50 animate-pulse rounded-[3rem]" />;
-  const lastUpdateText = data ? getTimeDifference(data.lastRecord.timestamp) : "...";
+  const lastUpdateText = data?.lastRecord 
+  ? getTimeDifference(data.lastRecord.timestamp) 
+  : "Sem registros";
 
-  const stability = getStability(data.statistics.desvioPadrao);
+ const stability = getStability(data?.statistics?.desvioPadrao);
 
 return (
   <div className="bg-white rounded-[3rem] p-10 shadow-[0_10px_40px_rgba(75,42,89,0.15)] w-[450px] relative overflow-hidden border border-brand-purple/10">
@@ -89,7 +95,11 @@ return (
       <div className="bg-brand-purple/5 px-6 py-2 rounded-full flex items-center border border-brand-purple/10">
         <div className={`w-2 h-2 rounded-full mr-2 ${stability.color.replace('text', 'bg')}`} />
         <span className="text-[11px] font-bold uppercase tracking-tight text-brand-purple">
-          {stability.label}
+          {stability ? (
+            stability.label
+          ) : (
+            "Sem dados disponíveis"
+          )}
         </span>
         </div>
       </div>
@@ -101,7 +111,11 @@ return (
           Mínima (1h)
         </span>
         <p className="text-lg font-bold text-gray-900 mt-1">
-          {data.statistics.min.toFixed(2)}°
+          {data.statistics ? (
+            data.statistics.min.toFixed(2)
+          ) : (
+            "Sem dados disponíveis"
+          )}
         </p>
       </div>
 
@@ -110,7 +124,11 @@ return (
           Máxima (1h)
         </span>
         <p className="text-lg font-bold text-gray-900 mt-1">
-          {data.statistics.max.toFixed(2)}°
+          {data.statistics ? (
+            data.statistics.max.toFixed(2)
+          ) : (
+            "Sem dados disponíveis"
+          )}
         </p>
       </div>
     </div>

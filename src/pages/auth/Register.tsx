@@ -10,17 +10,65 @@ import {
 } from 'lucide-react';
 import logost from '../../assets/logost.png';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../../services/auth/authService';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { LucideLoader2 } from 'lucide-react';
+import { LuArrowRight } from 'react-icons/lu';
 
 
 const Register = () => {
 
   const navigate = useNavigate();
+
+  const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  // states de formulário de cadastro
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleLoginClick = () => {
     navigate('/login');
   }
+
+   const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+    return toast.error("As senhas não coincidem");
+  }
+     setLoading(true);
+  
+    try {
+      await authService.register({ name, email, password });
+     
+      toast.success("Login realizado com sucesso")
+      await queryClient.invalidateQueries({ queryKey: ['authUser'] });
+  
+      navigate('/home');
+   } catch (err: any) {
+  
+      const zodErrors = err.response?.data?.errors;
+      const backendMessage = err.response?.data?.message || "Erro ao conectar com o servidor";
+  
+      if (zodErrors && Array.isArray(zodErrors)) {
+        zodErrors.forEach((error: any) => {
+          toast.error(`${error.path}: ${error.message}`);
+        });
+      } else {
+        toast.error(backendMessage);
+        setError(backendMessage); 
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 font-sans">
@@ -53,6 +101,8 @@ const Register = () => {
                     <input
                       type="text"
                       placeholder="Seu nome"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
                       className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-purple/20 focus:bg-white transition-all font-medium text-gray-700"
                     />
                   </div>
@@ -60,13 +110,15 @@ const Register = () => {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold uppercase tracking-wide text-gray-400 ml-1">
-                    E-mail Institucional
+                    E-mail
                   </label>
                   <div className="relative group">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-brand-purple transition-colors" size={18} />
                     <input
                       type="email"
-                      placeholder="exemplo@faculdade.edu"
+                      placeholder="exemplo@fatec.edu"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-purple/20 focus:bg-white transition-all font-medium text-gray-700"
                     />
                   </div>
@@ -81,6 +133,8 @@ const Register = () => {
                     <input
                       type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-purple/20 focus:bg-white transition-all font-medium text-gray-700"
                     />
                     <button
@@ -102,6 +156,8 @@ const Register = () => {
                     <input
                       type={showConfirmPassword ? "text" : "password"}
                       placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full pl-12 pr-12 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-brand-orange/20 focus:bg-white transition-all font-medium text-gray-700"
                     />
                     <button
@@ -114,10 +170,27 @@ const Register = () => {
                   </div>
                 </div>
 
-                <button className="w-full py-5 cursor-pointer bg-brand-orange text-white font-bold rounded-2xl shadow-lg shadow-brand-orange/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 uppercase text-xs tracking-wider mt-6">
-                  Finalizar Cadastro
-                  <ArrowRight size={18} />
-                </button>
+                <button 
+  onClick={handleRegister} 
+  disabled={loading} 
+  className={`w-full py-5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 uppercase text-xs font-bold tracking-wider mt-6
+    ${loading 
+      ? "bg-gray-400 cursor-not-allowed opacity-70" 
+      : "bg-brand-orange text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] shadow-brand-orange/30"
+    }`}
+>
+  {loading ? (
+    <>
+      <LucideLoader2 className="animate-spin" size={20} />
+      Processando...
+    </>
+  ) : (
+    <>
+      Finalizar Cadastro
+      <LuArrowRight size={18} />
+    </>
+  )}
+</button>
               </form>
 
               <div className="relative my-8">

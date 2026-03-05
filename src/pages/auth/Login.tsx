@@ -5,9 +5,9 @@ import logost from '../../assets/logost.png';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/auth/authService';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 const Login = () => {
-
 
     const queryClient = useQueryClient();
     const [showPassword, setShowPassword] = useState(false);
@@ -20,6 +20,10 @@ const Login = () => {
 
     const handleRegisterClick = () => {
         navigate('/register');
+    };
+
+    const handleHomeClick = () => {
+      navigate('/home');
     }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -28,11 +32,23 @@ const Login = () => {
 
   try {
     await authService.login({ email, password });
+    toast.success("Login realizado com sucesso")
     await queryClient.invalidateQueries({ queryKey: ['authUser'] });
 
     navigate('/home');
-  } catch (err) {
-    setError("Credenciais inválidas. Tente novamente.");
+ } catch (err: any) {
+
+    const zodErrors = err.response?.data?.errors;
+    const backendMessage = err.response?.data?.message || "Erro ao conectar com o servidor";
+
+    if (zodErrors && Array.isArray(zodErrors)) {
+      zodErrors.forEach((error: any) => {
+        toast.error(`${error.path}: ${error.message}`);
+      });
+    } else {
+      toast.error(backendMessage);
+      setError(backendMessage); 
+    }
   } finally {
     setLoading(false);
   }
@@ -51,7 +67,7 @@ return (
           className="relative z-10 w-full max-w-md"
         >
           <div className="mb-10 flex flex-col justify-center items-center">
-           <img src={logost} className='max-w-[80%]'/>
+           <img src={logost} className='max-w-[70%] cursor-pointer hover:scale-105 transition-all duration-150' onClick={handleHomeClick}/>
             <p className="text-gray-600 mt-3 text-xs tracking-[0.3em] uppercase font-jakarta font-bold">
               Sistema de monitoramento
             </p>

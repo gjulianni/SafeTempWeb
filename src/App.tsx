@@ -5,12 +5,16 @@ import { AuthProvider } from './contexts/auth/authContext';
 import Dashboard from './pages/dashboard/Dashboard';
 import ReportsPage from './pages/reports/ReportsPage';
 import AuthenticatedRoute from './contexts/auth/AuthenticatedContext';
+import { Toaster } from 'sonner';
+import Register from './pages/auth/Register';
 
 function App() {
     
     return (
         <AuthProvider>
+            <Toaster position="top-right" richColors closeButton />
         <Router>
+
             <Routes>
                 <Route path='/home' element={<Home />}
                 />
@@ -25,7 +29,7 @@ function App() {
             
                 <Route path='/register' element={
                 <AuthenticatedRoute>
-                    <Login />
+                    <Register />
                 </AuthenticatedRoute>
                 }     
                 />

@@ -34,7 +34,7 @@ const Navbar = () => {
 
   const handleHomeClick = () => {
     navigate('/home');
-  }
+  };
 
  return (
    <nav className={`

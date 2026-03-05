@@ -2,14 +2,15 @@ import React from 'react';
 import Navbar from '../../components/nav/Navbar';
 
 import {
-  LuClockAlert,
   LuLightbulb,
   LuActivity,
-  LuTrendingUp,
   LuShieldCheck,
   LuThermometer,
-  LuBadgePercent,
   LuSigma,
+  LuDatabaseBackup,
+  LuFileWarning,
+  LuTarget,
+  LuShieldAlert,
 } from 'react-icons/lu';
 
 import {
@@ -28,10 +29,10 @@ import {
 
 
 import { useHistory } from '../../hooks/useDashboard';
-import type { TemperatureRecord } from '../../types/records/TemperatureRecord';
 import Plot from 'react-plotly.js';
 import stdashboard from '../../assets/stdashboard.png';
 import formatTimeBRT from '../../utils/formatters/formatTimeBRT';
+import { LucideArrowDown, LucideArrowUp } from 'lucide-react';
 
 
 const PIE_COLORS = ['#32c5ff', '#4b2a59', '#ff4343'];
@@ -45,24 +46,36 @@ const Dashboard: React.FC = () => {
   if (isLoading) return <div className="p-10 text-center font-bold">Carregando...</div>;
   if (isError || !data?.records) return <div className="p-10 text-center text-red-500">Erro.</div>;
 
-const coldCount = data.records.filter(r => r.value < thresholds.cold).length;
-  const hotCount = data.records.filter(r => r.value > thresholds.hot).length;
-  const normalCount = data.records.filter(r => r.value >= thresholds.cold && r.value <= thresholds.hot).length;
-  const total = data.records.length;
+  const records = data?.records ?? [];
+  const total = records.length;
+  const hasData = total > 0;
 
-  const pieData = [
-    { name: `Frio (<${thresholds.cold}°C)`, value: total > 0 ? (coldCount / total) * 100 : 0 },
-    { name: `Normal (${thresholds.cold}-${thresholds.hot}°C)`, value: total > 0 ? (normalCount / total) * 100 : 0 },
-    { name: `Quente (>${thresholds.hot}°C)`, value: total > 0 ? (hotCount / total) * 100 : 0 },
-  ];
+  // Variáveis do pie chart 
+  const coldCount = records.filter(r => r.value < thresholds.cold).length;
+  const hotCount = records.filter(r => r.value > thresholds.hot).length;
+  const normalCount = records.filter(r => r.value >= thresholds.cold && r.value <= thresholds.hot).length;
 
-const values = data.records.map(r => r.value);
-  const barData: { hour: string; temp: number }[] = data?.records.map((record: TemperatureRecord) => {
- 
-        const date = formatTimeBRT(record.timestamp);
-  return { hour:`${date}`, temp: record.value };
-}) ?? [];
+  const pieData = hasData ? [
+    { name: `Frio (<${thresholds.cold}°C)`, value: (coldCount / total) * 100 },
+    { name: `Normal (${thresholds.cold}-${thresholds.hot}°C)`, value: (normalCount / total) * 100 },
+    { name: `Quente (>${thresholds.hot}°C)`, value: (hotCount / total) * 100 },
+  ] : [{ name: 'Sem Dados', value: 100 }];
 
+  const values = records.map(r => r.value);
+  const barData = records.map((record) => ({
+    hour: formatTimeBRT(record.timestamp),
+    temp: record.value
+  }));
+
+const EmptyChartState = ({ title }: { title: string }) => (
+  <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 border-2 border-dashed border-gray-100 rounded-2xl p-10">
+    <div className="p-4 bg-gray-50 rounded-full mb-4">
+      <LuDatabaseBackup size={50} className="text-gray-200" />
+    </div>
+    <p className="font-black uppercase tracking-widest text-[10px] text-gray-400 mb-1">{title}</p>
+    <p className="text-xs font-medium text-gray-400 text-center">Aguardando sincronização com a nuvem...</p>
+  </div>
+);
 
   return (
   <div className="grid grid-cols-[20px_1fr] grid-rows-[80px_1fr] h-screen w-full bg-[#f7f8fc] font-sans">
@@ -78,21 +91,98 @@ const values = data.records.map(r => r.value);
       <div className="grid grid-cols-3 gap-6">
         
  
-        <div className="col-span-2 bg-white p-6 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-          <h3 className="text-[1.1rem] font-semibold text-[#333333]">Histórico </h3>
-          <p className="text-[0.85rem] text-[#8a8a8a] mt-1 mb-5">Última hora</p>
-          <div className="w-full h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="hour" axisLine={false} tickLine={false} />
-                <YAxis unit="°C" axisLine={false} tickLine={false} />
-                <Tooltip cursor={{ fill: 'rgba(75, 42, 89, 0.1)' }} />
-                <Area dataKey="temp" fill="#ce6e46" type="monotone"/>
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+<div className="col-span-2 bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 flex flex-col group">
+  <div className="flex justify-between items-start mb-8">
+    <div>
+      <div className="flex items-center gap-2 mb-1">
+        <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
+        <h3 className="text-xl font-black text-[#333333] tracking-wide font-arial">Histórico</h3>
+      </div>
+      <p className="text-sm text-gray-400 font-medium">Análise térmica detalhada da última hora</p>
+    </div>
+
+    <div className="flex gap-2">
+       <span className="px-3 py-1 bg-gray-50 text-[10px] font-bold text-gray-400 rounded-full border border-gray-100 uppercase tracking-widest">
+         SafeTemp Cloud
+       </span>
+    </div>
+  </div>
+
+  <div className="w-full h-[400px] -ml-4"> 
+    {hasData ? (
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#ce6e46" stopOpacity={0.2}/>
+              <stop offset="95%" stopColor="#ce6e46" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
+          <XAxis 
+            dataKey="hour" 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{fontSize: 14, fill: '#A3A3A3', fontWeight: 600}} 
+            dy={10}
+          />
+          <YAxis 
+            unit="°C" 
+            axisLine={false} 
+            tickLine={false} 
+            tick={{fontSize: 14, fill: '#A3A3A3', fontWeight: 600}} 
+          />
+          <Tooltip 
+            contentStyle={{ 
+              borderRadius: '20px', 
+              border: 'none', 
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)',
+              padding: '12px 16px'
+            }} 
+          />
+          <Area 
+            type="monotone" 
+            dataKey="temp" 
+            stroke="#ce6e46" 
+            strokeWidth={2} 
+            fillOpacity={1} 
+            fill="url(#colorTemp)" 
+            animationDuration={1500}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    ) : <EmptyChartState title="Histórico Térmico" />}
+  </div>
+
+  {hasData && (
+    <div className="grid grid-cols-3 gap-2 mt-6 pt-8 border-t border-gray-200">
+      <div className="flex flex-col items-center">
+        <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.15em] mb-1">Pico Registrado</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-black text-[#333333]">{data?.statistics.max.toFixed(1)}°</span>
+          <span className="text-xs font-bold text-red-400">↑ Máx</span>
         </div>
+      </div>
+      
+      <div className="flex flex-col px-6 items-center">
+        <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.15em] mb-1">Ponto Mais Baixo</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-black text-[#333333]">{data?.statistics.min.toFixed(1)}°</span>
+          <span className="text-xs font-bold text-blue-400">↓ Mín</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col px-6 items-center">
+        <span className="text-[10px] font-black uppercase text-gray-400 tracking-[0.15em] mb-1">Média</span>
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-black text-[#333333]">{data?.statistics.media.toFixed(1)}°</span>
+          <span className="text-xs font-bold text-blue-400">↓ Média</span>
+        </div>
+      </div>
+
+    </div>
+  )}
+</div>
 
  <div className="col-span-1 bg-white p-6 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col">
   <div className="flex justify-between items-start mb-5">
@@ -123,29 +213,24 @@ const values = data.records.map(r => r.value);
     </div>
   </div>
 
-  <div className="w-full h-[250px] mb-4">
-    <ResponsiveContainer width="100%" height="100%">
-      <PieChart>
-        <Pie 
-          data={pieData} 
-          cx="50%" 
-          cy="50%" 
-          innerRadius={60} 
-          outerRadius={80} 
-          paddingAngle={5}
-          dataKey="value"
-        >
-          {pieData.map((_, index) => (
-            <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-          ))}
-        </Pie>
-       <Tooltip formatter={(value: number | undefined) => value !== undefined ? `${value.toFixed(2)}%` : '0%'
-  } 
-/>
-        <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-      </PieChart>
-    </ResponsiveContainer>
-  </div>
+ <div className="col-span-1 bg-white p-6 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col">
+            <h3 className="text-[1.1rem] font-semibold text-[#333333]">Distribuição</h3>
+            {hasData ? (
+              <div className="w-full h-[250px] mt-10">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} dataKey="value">
+                      {pieData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={hasData ? PIE_COLORS[index] : '#f3f4f6'} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number | undefined) => value !== undefined ? `${value.toFixed(2)}%` : '0%' }/>
+                    <Legend verticalAlign="bottom" height={36}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : <div className="mt-10 h-full"><EmptyChartState title="Distribuição por Faixa" /></div>}
+          </div>
    
 {data?.statistics && (
     <div className="mt-auto pt-4 border-t border-gray-100 flex gap-3">
@@ -161,21 +246,79 @@ const values = data.records.map(r => r.value);
   )}
         </div>
 
-        <div className="col-span-1 bg-white p-6 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
-          <h3 className="text-[1.1rem] font-semibold text-[#333333]">Análise de Outliers</h3>
-          <div className="w-full h-[300px] mt-4">
-            <Plot
-              data={[{ y: values, type: 'box', name: 'Temp', marker: { color: '#585554' } }]}
-              layout={{ autosize: true, margin: { t: 10, b: 30, l: 40, r: 10 } } as any}
-              className="w-full h-full"
-              useResizeHandler
-            />
+<div className="col-span-1 bg-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 flex flex-col group h-full">
+
+  <div className="flex justify-between items-start mb-6">
+    <div>
+      <h3 className="text-xl font-black text-[#333333] tracking-tight">Distribuição e Outliers</h3>
+      <p className="text-xs text-gray-400 font-medium">Análise de dispersão (Boxplot)</p>
+    </div>
+    <div className={`p-2 rounded-xl ${data?.statistics.totalOutliers > 0 ? 'bg-red-50 text-red-400' : 'bg-green-50 text-green-400'}`}>
+      <LuShieldAlert size={20} />
+    </div>
+  </div>
+
+  <div className="w-full h-[400px] flex-grow">
+    {hasData ? (
+      <Plot
+        data={[{ 
+          y: values, 
+          type: 'box', 
+          name: 'Temperatura',
+          boxpoints: 'outliers',
+          jitter: 0.5,     
+    pointpos: -1.8,
+          marker: { color: '#ce6e46', size: 6 },
+          line: { width: 2 },
+          fillcolor: 'rgba(206, 110, 70, 0.1)'
+        }]}
+        layout={{ 
+          autosize: true, 
+          margin: { t: 0, b: 20, l: 40, r: 10 },
+          paper_bgcolor: 'rgba(0,0,0,0)',
+          plot_bgcolor: 'rgba(0,0,0,0)',
+          yaxis: {
+            gridcolor: '#f5f5f5',
+            zeroline: false,
+            tickfont: { size: 10, color: '#A3A3A3' }
+          },
+          xaxis: { showticklabels: false }
+        } as any}
+        className="w-full h-full"
+        useResizeHandler
+      />
+    ) : <EmptyChartState title="Análise de Dispersão" />}
+  </div>
+
+  {hasData && (
+    <div className="mt-6 space-y-3">
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group-hover:bg-white group-hover:shadow-lg transition-all duration-500">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm text-[#ce6e46]">
+            <LuTarget size={16} />
           </div>
-          <div className="mt-4 p-3 bg-white rounded-lg flex justify-between items-center shadow-[0_5px_7px_rgba(0,0,0,0.08)]">
-            <span className="font-medium text-[#313131]">Total Outliers:</span>
-            <span className="font-bold text-[#ce6e46]">{data?.statistics.totalOutliers}</span>
-          </div>
+          <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Outliers</span>
         </div>
+        <span className={`text-lg font-black ${data?.statistics.totalOutliers > 0 ? 'text-red-500' : 'text-green-500'}`}>
+          {data?.statistics.totalOutliers}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
+          <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Mediana</span>
+          <span className="text-md font-black text-[#333333]">{data?.statistics.mediana.toFixed(2)}°C</span>
+        </div>
+        <div className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
+          <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Q3 (Topo)</span>
+          <span className="text-md font-black text-[#333333]">
+             {(data?.statistics.mediaNoOutlier + data?.statistics.desvioPadrao).toFixed(2)}°
+          </span>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
 
    <div className="col-span-2 bg-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50">
   <div className="flex items-center justify-between mb-8">
@@ -189,40 +332,31 @@ const values = data.records.map(r => r.value);
   </div>
 
   <div className="grid grid-cols-2 gap-4">
-    {[
-      { label: 'Total de Registros', val: data.statistics.totalRecords, icon: <LuSigma />, desc: 'Número total de registros'},
-      { label: 'Mediana', val: data?.statistics.mediana, unit: '°C', icon: <LuBadgePercent />, desc: 'Valor central exato'},
-      { label: 'Desvio Padrão', val: data?.statistics.desvioPadrao, unit: '%', icon: <LuActivity size={20} />, desc: 'Dispersão dos dados' },
-      { label: 'Variância', val: data?.statistics.variancia, unit: '%', icon: <LuTrendingUp size={20} />, desc: 'Afastamento da média' },
-      { label: 'CV sem Outliers', val: data?.statistics.CVNoOutlier, unit: '%', icon: <LuShieldCheck size={20} />, desc: 'Estabilidade filtrada' },
-      { label: 'CV com Outliers', val: data?.statistics.CVOutlier, unit: '%', icon: <LuClockAlert size={20} />, desc: 'Variação bruta' },
-      { label: 'Média Estabilizada', val: data?.statistics.mediaNoOutlier, unit: '°C', icon: <LuThermometer size={20} />, desc: 'Tendência central' }
-    ].map((stat, i) => (
-      <div 
-        key={i} 
-        className="group p-2 bg-gray-70 hover:bg-white hover:shadow-xl hover:shadow-gray-200/50 rounded-2xl border border-transparent hover:border-gray-100 transition-all duration-300"
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div className="p-2 bg-white rounded-xl shadow-sm group-hover:bg-[#ce6e46] group-hover:text-white transition-colors text-[#ce6e46]">
-            {stat.icon}
-          </div>
-          <div className="text-right">
-            <span className="block text-2xl font-black text-[#333333] group-hover:text-[#ce6e46] transition-colors">
-              {stat.val?.toFixed(2)}<span className="text-sm ml-0.5">{stat.unit}</span>
-            </span>
-          </div>
-        </div>
-        <div>
-          <span className="block text-sm font-bold text-gray-700">{stat.label}</span>
-          <span className="text-[10px] text-gray-400 uppercase font-black tracking-wider">{stat.desc}</span>
-        </div>
-      </div>
-    ))}
+              {[
+                { label: 'Total de Registros', val: data?.statistics?.totalRecords ?? 0, unit: '', icon: <LuSigma /> },
+                { label: 'Mínima Registrada', val: data?.statistics?.min ?? 0, unit: '', icon: <LucideArrowDown /> },
+                { label: 'Máxima Registrada', val: data?.statistics?.max ?? 0, unit: '', icon: <LucideArrowUp /> },
+                { label: 'Média Estabilizada', val: data?.statistics?.mediaNoOutlier ?? 0, unit: '°C', icon: <LuThermometer /> },
+                { label: 'Desvio Padrão', val: data?.statistics?.desvioPadrao ?? 0, unit: '%', icon: <LuActivity /> },
+                { label: 'CV sem Outliers', val: data?.statistics?.CVNoOutlier ?? 0, unit: '%', icon: <LuShieldCheck /> },
+                { label: 'CV com Outliers', val: data?.statistics?.CVOutlier ?? 0, unit: '%', icon: <LuFileWarning /> },
+                
+              ].map((stat, i) => (
+                <div key={i} className={`p-4 rounded-2xl border ${hasData ? 'bg-gray-50 border-transparent' : 'bg-white border-dashed border-gray-100 opacity-60'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-lg text-[#ce6e46]">{stat.icon}</div>
+                    <div>
+                      <span className="block text-lg font-black text-gray-800">
+                        {hasData ? stat.val.toFixed(2) : '—'}<span className="text-xs ml-0.5">{stat.unit}</span>
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-bold uppercase">{stat.label}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
   </div>
 
-  {/* Bloco de Insights com Design Modernizado */}
   <div className="mt-8 p-6 bg-gradient-to-br from-[#4b2a59] to-[#2d1936] rounded-3xl text-white relative overflow-hidden group">
-    {/* Efeito visual de fundo */}
     <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl group-hover:bg-[#ce6e46]/20 transition-all duration-500" />
     
     <div className="relative z-10 flex gap-5">

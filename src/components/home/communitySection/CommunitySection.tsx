@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, Zap, Database } from 'lucide-react';
+import { CheckCircle2, Zap } from 'lucide-react';
 import { useDashboard } from '../../../hooks/useDashboard';
 
 const roles = ["estudantes.", "pesquisadores.", "gestores.", "professores.", "você."];
@@ -74,16 +74,19 @@ const CommunitySection = () => {
               </div>
             </div>
           </div>
-       <div className="w-full lg:w-[45%] relative flex justify-center items-center h-[600px]">
+    <div className="w-full lg:w-[45%] relative flex justify-center items-center h-[420px] sm:h-[500px] lg:h-[600px]">
+  <div className="absolute w-[280px] sm:w-[400px] lg:w-[500px] h-[280px] sm:h-[400px] lg:h-[500px] bg-brand-purple/5 rounded-full blur-[80px] lg:blur-[100px]" />
 
-  <div className="absolute w-[500px] h-[500px] bg-brand-purple/5 rounded-full blur-[100px]" />
-  
-  <motion.div 
-    initial={{ x: -90, y: 90, opacity: 0 }}
-    whileInView={{ x: -70, y: 40, opacity: 1 }}
-    viewport={{ once: true }}
-    className="relative z-10 w-full max-w-[420px] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden"
-  >
+  <motion.div
+  initial={{ x: -40, y: 60, opacity: 0 }}
+  whileInView={{ x: 0, y: 0, opacity: 1 }}
+  viewport={{ once: true }}
+  className="relative z-10 mx-auto lg:mx-0 lg:-translate-x-16 lg:translate-y-10
+             w-full max-w-[420px] bg-white rounded-2xl shadow-2xl 
+             border border-gray-100 overflow-hidden"
+>
+
+    {/* header */}
     <div className="h-8 bg-gray-50 border-b border-gray-100 flex items-center px-4 gap-2">
       <div className="flex gap-1.5">
         <div className="w-2 h-2 rounded-full bg-red-400" />
@@ -91,28 +94,33 @@ const CommunitySection = () => {
         <div className="w-2 h-2 rounded-full bg-green-400" />
       </div>
     </div>
- 
-    <div className="p-6 bg-gradient-to-br from-white to-gray-50">
+
+    {/* content */}
+    <div className="p-4 sm:p-6 bg-gradient-to-br from-white to-gray-50">
+
       <div className="flex justify-between items-start mb-6">
+
         <div>
-          <p className="text-[10px] font-black text-brand-purple uppercase tracking-[0.5em] mb-1">
+          <p className="text-[9px] sm:text-[10px] font-black text-brand-purple uppercase tracking-[0.4em] sm:tracking-[0.5em] mb-1">
             Dashboard
-          </p>    
-          <h4 className="text-2xl font-black text-gray-900 leading-none">
+          </p>
+
+          <h4 className="text-xl sm:text-2xl font-black text-gray-900 leading-none">
             {isLoading ? (
               "0"
             ) : (
-              <h1>{total}+</h1>
-            )}<span className="text-xs font-medium text-gray-400">registros</span>
+              <span>{total}+</span>
+            )}
+            <span className="text-[10px] sm:text-xs font-medium text-gray-400 ml-1">
+              registros
+            </span>
           </h4>
         </div>
-        <div className="p-2 bg-brand-purple/5 rounded-lg">
-          <Database size={20} className="text-brand-purple" />
-        </div>
       </div>
-      
       <div className="space-y-2">
-        <div className="flex items-end gap-1 h-12">
+
+        <div className="flex items-end gap-1 h-10 sm:h-12">
+
           {[40, 70, 45, 90, 65, 80, 50].map((h, i) => (
             <motion.div 
               key={i}
@@ -121,29 +129,45 @@ const CommunitySection = () => {
               className="flex-1 bg-brand-purple/20 rounded-t-sm"
             />
           ))}
+
         </div>
-        <p className="text-[9px] text-gray-400 font-bold uppercase">Sincronização em tempo real ativa</p>
+
+        <p className="text-[8px] sm:text-[9px] text-gray-400 font-bold uppercase">
+          Sincronização em tempo real ativa
+        </p>
+
       </div>
     </div>
   </motion.div>
 
   <motion.div 
-    initial={{ x: 80, y: -80, opacity: 0 }}
-    whileInView={{ x: -30, y: -20, opacity: 1 }}
+    initial={{ x: 60, y: -60, opacity: 0 }}
+    whileInView={{ x: 20, y: -10, opacity: 1 }}
     transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
     viewport={{ once: true }}
-    className="absolute top-10 -right-2 md:right-0 z-20 w-[170px] h-[340px] bg-gray-900 rounded-[2.2rem] border-[6px] border-gray-800 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden hidden sm:block"
-  >
-    <div className="w-full h-full bg-brand-purple p-6 flex flex-col justify-between">
-      <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center">
-        <Zap size={16} className="text-white" />
+   className="absolute 
+top-6 right-2 
+scale-75 sm:scale-90 md:scale-100
+z-20 w-[170px] h-[340px] 
+bg-gray-900 rounded-[2.2rem] border-[6px] border-gray-800 
+shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] 
+overflow-hidden">
+
+    <div className="w-full h-full bg-brand-purple p-4 sm:p-6 flex flex-col justify-between">
+
+      <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
+        <Zap size={14} className="text-white" />
       </div>
-      
+
       <div className="text-left">
-        <p className="text-[8px] text-white/50 uppercase font-black tracking-widest mb-1">
+        <p className="text-[7px] sm:text-[8px] text-white/50 uppercase font-black tracking-widest mb-1">
           Temp. Estufa
         </p>
-        <h4 className="text-3xl font-black text-white">25.3°C</h4>
+
+        <h4 className="text-2xl sm:text-3xl font-black text-white">
+          25.3°C
+        </h4>
+
         <div className="w-full h-1 bg-white/20 rounded-full mt-4 overflow-hidden">
           <motion.div 
             initial={{ width: 0 }}
@@ -153,11 +177,13 @@ const CommunitySection = () => {
         </div>
       </div>
 
-      <div className="py-2 px-3 bg-white/10 rounded-xl text-[8px] font-bold text-white text-center uppercase tracking-widest">
+      <div className="py-2 px-3 bg-white/10 rounded-xl text-[7px] sm:text-[8px] font-bold text-white text-center uppercase tracking-widest">
         Sistema Operacional
       </div>
+
     </div>
   </motion.div>
+
 </div>
 </div>
 </div>

@@ -7,6 +7,7 @@ import ReportsPage from './pages/reports/ReportsPage';
 import AuthenticatedRoute from './contexts/auth/AuthenticatedContext';
 import { Toaster } from 'sonner';
 import Register from './pages/auth/Register';
+import MobileDeviceAlert from './components/mobileAlert/MobileDeviceAlert';
 
 function App() {
     
@@ -14,7 +15,7 @@ function App() {
         <AuthProvider>
             <Toaster position="top-right" richColors closeButton />
         <Router>
-
+            <MobileDeviceAlert />
             <Routes>
                 <Route path='/home' element={<Home />}
                 />

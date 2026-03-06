@@ -6,13 +6,16 @@ import {
   LuChevronRight, LuFilter, 
   LuDownload,
   LuLoader,
-  LuShare2
+  LuShare2,
+  LuThermometer,
+  LuActivity
 } from 'react-icons/lu';
 import Navbar from '../../components/nav/Navbar';
 import logost from '../../assets/logost.png';
 import formatToBR from '../../utils/formatters/formatDateToBR';
 import ReportsHero from '../../components/reports/ReportsHero';
 import ReportDataChart from '../../components/reports/ReportDataChart';
+import { useDashboard } from '../../hooks/useDashboard';
 
 interface Report {
   id: number;
@@ -33,6 +36,9 @@ const ReportsPage: React.FC = () => {
   const savedMode = localStorage.getItem("@SafeTemp:viewMode");
   return (savedMode === "graphical" || savedMode === "leitura") ? savedMode : "leitura";
 });
+
+  const { data } = useDashboard();
+  const record = data?.lastRecord;
 
   useEffect(() => {
     fetchTodayReports();
@@ -146,47 +152,49 @@ const handleShare = async (id: number) => {
 };
 
   return (
-    <div className="flex min-h-screen bg-[#f8f9fc]">
+    <div className="flex min-h-screen bg-[#f8f9fc] max-w-[100vw] overflow-x-hidden">
     <Navbar />
 
-    <div className="flex-1 flex flex-col p-8">
+   <div className="flex-1 flex flex-col p-4 sm:p-8 w-full max-w-full">
       
-      <div className="mb-8 mt-20">
+      <div className="mb-8 mt-16 sm:mt-20 w-full">
         <ReportsHero viewMode={viewMode} setViewMode={setViewMode}/>
       </div>
-
-      <div className="flex gap-8 items-start">
-        <aside className="w-[400px] bg-white rounded-[2.5rem] border border-gray-100 flex flex-col shadow-xl z-10 overflow-hidden">
-          <div className="p-6 border-b border-gray-50 bg-gray-50/30">
-            <h2 className="text-xl font-black text-gray-800 mb-4 flex items-center gap-2">
-              <LuFilter className="text-brand-purple" /> Filtro de Relatórios
-            </h2>
-            <form onSubmit={handleSearch} className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Início</label>
-                  <input 
-                    type="date" 
-                    className="w-full p-2 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-brand-purple"
-                    onChange={(e) => setSearchDates({...searchDates, inicio: e.target.value})}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Fim</label>
-                  <input 
-                    type="date" 
-                    className="w-full p-2 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-brand-purple"
-                    onChange={(e) => setSearchDates({...searchDates, fim: e.target.value})}
-                  />
-                </div>
-              </div>
-              <button type="submit" className="w-full py-3 cursor-pointer bg-brand-purple text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 transition-all">
-                <LuSearch size={16} /> Pesquisar
-              </button>
-            </form>
+      <div className="flex flex-col xl:flex-row gap-6 sm:gap-8 items-start justify-center xl:justify-between w-full">
+       <aside className="w-full xl:w-[380px] xl:sticky xl:top-24 bg-white rounded-[2rem] sm:rounded-[2.5rem] border border-gray-100 flex flex-col shadow-xl z-10 overflow-hidden order-2 xl:order-1">
+      <div className="p-5 sm:p-6 border-b border-gray-50 bg-gray-50/30">
+        <h2 className="text-lg sm:text-xl font-black text-gray-800 mb-4 flex items-center gap-2">
+          <LuFilter className="text-brand-purple" /> Filtro de Relatórios
+        </h2>
+        
+        <form onSubmit={handleSearch} className="space-y-3">
+          {/* GRID: Agora ele vira 1 coluna abaixo de 500px para não vazar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Início</label>
+              <input 
+                type="date" 
+                className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-brand-purple transition-all"
+                onChange={(e) => setSearchDates({...searchDates, inicio: e.target.value})}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Fim</label>
+              <input 
+                type="date" 
+                className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-brand-purple transition-all"
+                onChange={(e) => setSearchDates({...searchDates, fim: e.target.value})}
+              />
+            </div>
           </div>
+          
+          <button type="submit" className="w-full py-3.5 cursor-pointer bg-brand-purple text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all">
+            <LuSearch size={16} /> Pesquisar
+          </button>
+        </form>
+      </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <div className="max-h-[400px] xl:max-h-[500px] overflow-y-auto p-4 space-y-3 custom-scrollbar">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-2">
               {reports.length} Resultados encontrados
             </p>
@@ -221,7 +229,7 @@ const handleShare = async (id: number) => {
         </aside>
 
       {/* ÁREA DE VISUALIZAÇÃO (70%) */}
-     <main className="bg-[#f8f9fc] relative ">
+     <main className="w-full xl:flex-1 bg-[#f8f9fc] relative order-3 xl:order-2">
   <AnimatePresence mode="wait">
     {selectedReport ? (
       <motion.div
@@ -282,7 +290,7 @@ const handleShare = async (id: number) => {
             </div>
           )}
 
-          <div className="flex items-center justify-between p-6 bg-white/50 backdrop-blur-sm border border-gray-100 rounded-[2rem] shadow-sm">
+          <div className="flex items-center mt-4 justify-between p-6 bg-white/50 backdrop-blur-sm border border-gray-100 rounded-[2rem] shadow-sm">
             <div className="flex flex-col">
               <span className={`text-[10px] font-black uppercase tracking-[0.2em] mb-1 ${viewMode === 'leitura' ? 'text-brand-purple' : 'text-brand-orange'}`}>
                 Gestão de Dados
@@ -310,13 +318,48 @@ const handleShare = async (id: number) => {
         </div>
       </motion.div>
     ) : (
-      <div className="h-full flex flex-col items-center justify-center text-gray-300">
+      <div className="h-full flex flex-col items-center justify-center text-gray-300 mt-15">
         <LuFileText size={64} className="mb-4 opacity-20" />
         <p className="font-bold text-xl">Selecione um relatório para visualizar</p>
       </div>
     )}
   </AnimatePresence>
 </main>
+ <aside className="w-full xl:w-[320px] xl:sticky xl:top-24 h-auto space-y-6 order-1 xl:order-3">
+  {/* Card 1: Status Atual */}
+  <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-xl">
+    <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+       <LuActivity className="text-brand-orange" /> Status Atual
+    </h3>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-3xl font-black text-gray-800">
+    {record?.value ?? "--"}°C 
+  </p>
+        <p className="text-[10px] font-bold text-green-500 uppercase">Ambiente Seguro</p>
+      </div>
+      <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-500">
+         <LuThermometer size={24} />
+      </div>
+    </div>
+  </div>
+
+  <div className="bg-[#282735] p-6 rounded-[2.5rem] shadow-2xl text-white">
+    <h3 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4">
+      IA Insights
+    </h3>
+    <ul className="space-y-4">
+      <li className="flex gap-3 text-xs leading-relaxed">
+        <span className="text-brand-orange">✦</span>
+        A temperatura média subiu 2% em relação ao relatório anterior.
+      </li>
+      <li className="flex gap-3 text-xs leading-relaxed">
+        <span className="text-brand-purple">✦</span>
+        Nenhum outlier crítico foi detectado nesta janela.
+      </li>
+    </ul>
+  </div>
+</aside>
     </div>
     </div>
   </div>

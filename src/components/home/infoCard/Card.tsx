@@ -51,17 +51,24 @@ const getStability = (std: number | null | undefined) => {
       }
       prevValueRef.current = newVal;
     }
-  }, [data?.lastRecord.value]);
+}, [data?.lastRecord?.value]);
 
-  if (isLoading || !data) return <div className="h-96 w-full bg-gray-50 animate-pulse rounded-[3rem]" />;
+  if (isLoading || !data || !data.lastRecord) {
+  return (
+    <div className="h-96 w-full bg-gray-50 animate-pulse rounded-[3rem]" />
+  );
+}
   const lastUpdateText = data?.lastRecord 
   ? getTimeDifference(data.lastRecord.timestamp) 
   : "Sem registros";
 
  const stability = getStability(data?.statistics?.desvioPadrao);
 
+ const TrendIcon = trend.icon;
+const StabilityIcon = stability.Icon;
+
 return (
-  <div className="bg-white rounded-[3rem] p-10 shadow-[0_10px_40px_rgba(75,42,89,0.15)] w-[450px] relative overflow-hidden border border-brand-purple/10">
+<div className="bg-white rounded-[2.5rem] sm:rounded-[3.0rem] p-6 sm:p-10 shadow-[0_10px_40px_rgba(75,42,89,0.15)] w-full max-w-[450px] relative overflow-hidden border border-brand-purple/10 transition-all duration-300">
 
     <div className="relative flex justify-between items-center mb-10">
       <div className="flex items-center gap-2">
@@ -70,13 +77,13 @@ return (
           Monitoramento Ativo
         </span>
       </div>
-      <stability.Icon className="text-gray-400" size={20} />
+      <StabilityIcon className="text-gray-400" size={20} />
     </div>
 
     <div className="relative text-center">
-      <h2 className="text-[88px] font-black text-gray-900 leading-none tracking-tight">
+      <h2 className="text-6xl sm:text-7xl lg:text-[88px] font-black text-gray-900 leading-none tracking-tight">
         {data.lastRecord.value.toFixed(1)}
-        <span className="text-2xl text-gray-400 align-top ml-1">°C</span>
+        <span className="text-xl sm:text-2xl text-gray-400 align-top ml-1">°C</span>
       </h2>
 
       <p className="text-gray-500 font-semibold text-xs uppercase tracking-widest mt-3">
@@ -84,7 +91,7 @@ return (
       </p>
 
       <div className={`mt-4 inline-flex items-center gap-1 font-semibold text-sm ${trend.color}`}>
-        <trend.icon size={16} />
+        <TrendIcon size={16} />
         {trend.text}
       </div>
     </div>

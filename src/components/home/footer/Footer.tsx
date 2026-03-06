@@ -29,7 +29,7 @@ const Footer = () => {
       <div className="max-w-[1400px] mx-auto px-6 lg:px-12">
         
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 pb-16 border-b border-white/20">
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-12 pb-16 border-b border-white/20">
           
    
           <div className="space-y-6">
@@ -37,7 +37,7 @@ const Footer = () => {
               SafeTemp
             </h2>
             <p className="text-white/80 leading-relaxed font-medium">
-              Monitoramento inteligente e preciso para estufas laboratoriais. Desenvolvido por estudantes para transformar a ciência.
+              Monitoramento inteligente e preciso para estufas laboratoriais. Desenvolvido por Gabriel Juliani.
             </p>
             <div className="flex gap-4">
               <button className="p-3 bg-white/10 rounded-xl hover:bg-white/20 transition-all cursor-pointer">
@@ -50,33 +50,6 @@ const Footer = () => {
                 <Mail size={20} />
               </button>
             </div>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-8 text-black/40">Tecnologias</h4>
-            <ul className="space-y-4 font-bold text-white/90">
-              <li className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
-                React Native & Expo
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
-                TypeScript & Node.js
-              </li>
-              <li className="flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
-                Azure SQL Database
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-sm font-black uppercase tracking-[0.2em] mb-8 text-black/40">Projeto</h4>
-            <ul className="space-y-4 font-bold text-white/90">
-              <li className="hover:translate-x-1 transition-transform cursor-pointer">Documentação</li>
-              <li className="hover:translate-x-1 transition-transform cursor-pointer">Funcionalidades</li>
-              <li className="hover:translate-x-1 transition-transform cursor-pointer">Histórico de Dados</li>
-            </ul>
           </div>
         </div>
 

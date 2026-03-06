@@ -43,6 +43,10 @@ const Navbar = () => {
     navigate('/home');
   };
 
+  const handleReportsClick = () => {
+    navigate('/historico/relatorios');
+  }
+
   const loadNotifications = async () => {
     const res = await getNotifications();
     setNotifications(res.data);
@@ -78,17 +82,15 @@ const Navbar = () => {
           onClick={() => setActiveMenu(null)} 
         />
       )}
-      <AnimatePresence>
-    {activeMenu && (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={() => setActiveMenu(null)}
-        className="fixed inset-0 bg-black/60 z-30 cursor-default" 
-      />
-    )}
-  </AnimatePresence>
+   <AnimatePresence>
+      {(activeMenu || isOpen) && (
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          onClick={() => { setActiveMenu(null); setIsOpen(false); }}
+          className="fixed inset-0 bg-black/60 z-30 backdrop-blur-sm"
+        />
+      )}
+    </AnimatePresence>
      <div className={`
         relative w-full bg-white backdrop-blur-md border border-white/20 shadow-lg px-6 py-3 z-40 transition-all duration-500 ease-in-out
         ${activeMenu 
@@ -175,17 +177,66 @@ const Navbar = () => {
             </button>
             )}
 
-            <button 
-              onClick={() => setIsOpen(!isOpen)} 
-              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            <button onClick={() => setIsOpen(!isOpen)} className="md:hidden p-2 text-gray-600">
+            {isOpen ? <X size={28} /> : <Menu size={28} />}
+          </button>
           </div>
         </div>
-        <AnimatePresence>
-        {activeMenu === 'Histórico' && <HistoryMegaMenu />}
+       <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden border-t border-gray-100 overflow-hidden bg-white"
+          >
+            <div className="flex flex-col p-6 gap-4">
+              {linksNavegacao.map((link) => {
+                const hasSubmenu = link.nome === 'Histórico' || link.nome === 'Comparações';
+                const isSubOpen = activeMenu === link.nome;
+
+                return (
+                  <div key={link.nome} className="flex flex-col">
+                    <button 
+                      onClick={() => hasSubmenu ? toggleMenu(link.nome) : navigate(link.path)}
+                      className="flex items-center justify-between py-3 text-lg font-bold text-gray-700"
+                    >
+                      <span className="flex items-center gap-3"><link.icon size={20}/> {link.nome}</span>
+                      {hasSubmenu && <ChevronDown className={`transition-transform ${isSubOpen ? 'rotate-180' : ''}`} />}
+                    </button>
+
+                    {/* SUBMENU MOBILE (ACCORDION) */}
+                    <AnimatePresence>
+                      {isSubOpen && hasSubmenu && (
+                        <motion.div 
+                          initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+                          className="pl-8 flex flex-col gap-3 border-l-2 border-brand-purple/20 ml-2 mb-4"
+                        >
+                          <button onClick={handleReportsClick} className="text-left text-sm text-gray-500 py-1">Relatórios</button>
+                          <button className="text-left text-sm text-gray-500 py-1">Consulta de Dados</button>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+              
+              {!isAuthenticated && (
+                <button onClick={handleLoginClick} className="w-full py-4 bg-brand-purple text-white rounded-2xl font-bold mt-4">
+                  Entrar na Conta
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
+
+      {/* MEGA MENU DESKTOP */}
+      <div className="hidden md:block">
+        <AnimatePresence>
+          {activeMenu === 'Histórico' && <HistoryMegaMenu />}
+        </AnimatePresence>
+      </div>
       </div>
       
     </nav>

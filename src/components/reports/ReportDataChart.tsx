@@ -49,8 +49,8 @@ const ReportDataChart = ({ reportId }: ReportDataChartProps) => {
   const stats = data.statistics;
 
  return (
-    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="grid grid-cols-4 gap-4">
+    <div className="flex flex-col gap-6 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard label="Média Real" value={stats.media.toFixed(2)} unit="°C" icon={<LuActivity />} color="purple" />
         <StatCard label="Pico Máximo" value={stats.max.toFixed(2)} unit="°C" icon={<LuTrendingUp />} color="orange" />
         <StatCard label="Ponto Mínimo" value={stats.min.toFixed(2)} unit="°C" icon={<LuTrendingDown />} color="blue" />
@@ -62,9 +62,8 @@ const ReportDataChart = ({ reportId }: ReportDataChartProps) => {
           color={stats.totalOutliers > 0 ? "red" : "green"} 
         />
       </div>
-
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group">
-        <div className="flex justify-between items-center mb-6">
+<div className="bg-white p-4 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden group">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-6">
           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Comportamento Térmico (Janela de 60min)</h4>
           <span className="px-3 py-1 bg-brand-orange/10 text-brand-orange text-[10px] font-black rounded-full">LIVE RECONSTRUCTION</span>
         </div>
@@ -106,8 +105,8 @@ const ReportDataChart = ({ reportId }: ReportDataChartProps) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 flex flex-col justify-between">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 flex flex-col justify-between">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Precisão (Desvio Padrão)</span>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl font-black text-gray-800">± {stats.desvioPadrao.toFixed(3)}</span>
@@ -116,7 +115,7 @@ const ReportDataChart = ({ reportId }: ReportDataChartProps) => {
           <p className="text-[9px] text-gray-400 mt-2 font-medium">Quanto menor este valor, mais estável foi a sua estufa.</p>
         </div>
 
-        <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
+       <div className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100">
           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Coef. de Variação (CV)</span>
           <div className="mt-2 flex items-center gap-3">
              <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -130,7 +129,7 @@ const ReportDataChart = ({ reportId }: ReportDataChartProps) => {
           <p className="text-[9px] text-gray-400 mt-2 font-medium">Indica a dispersão relativa dos dados em relação à média.</p>
         </div>
 
-        <div className="bg-[#282735] p-6 rounded-3xl shadow-xl flex items-center justify-between">
+        <div className="bg-[#282735] p-6 rounded-3xl shadow-xl flex items-center justify-between md:col-span-2 lg:col-span-1">
           <div>
             <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Amostragem</span>
             <p className="text-2xl font-black text-white">{stats.totalRecords}</p>

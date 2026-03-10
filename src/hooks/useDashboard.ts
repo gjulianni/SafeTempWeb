@@ -46,3 +46,26 @@ export function useHistory() {
     refetchInterval: 60000, 
   });
 };
+
+  export function useData(filters: 
+    { 
+      date: string; start?: string; end?: string; granularity?: string 
+    }) {
+      return useQuery({
+        queryKey: ['use-data', filters],
+        queryFn: async () => {
+          try {
+          const [dataResponse] = await Promise.all([
+            api.get('data/history', { params: filters })
+          ]);
+          return {
+            records: dataResponse.data.records || [],
+            statistics: dataResponse.data.statistics,
+          } as TemperatureHistoryResponse;
+          } catch (err: unknown) {
+            console.error('Erro ao obter Histórico na data solicitada');
+            throw err;
+          }
+        }
+      })
+    };

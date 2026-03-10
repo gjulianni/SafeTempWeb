@@ -8,6 +8,7 @@ import AuthenticatedRoute from './contexts/auth/AuthenticatedContext';
 import { Toaster } from 'sonner';
 import Register from './pages/auth/Register';
 import MobileDeviceAlert from './components/mobileAlert/MobileDeviceAlert';
+import HistoryPage from './pages/history/HistoryPage';
 
 function App() {
     
@@ -38,6 +39,8 @@ function App() {
                 <Route path='/dashboard' element={<Dashboard />}
                 />
                 <Route path='/historico/relatorios' element={<ReportsPage />}
+                />
+                <Route path='/historico' element={<HistoryPage />}
                 />
                 <Route path="*" element={<Home />} />
             </Routes>

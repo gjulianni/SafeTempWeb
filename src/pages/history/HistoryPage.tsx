@@ -12,9 +12,36 @@ import {
 import Navbar from '../../components/nav/Navbar';
 import { useData } from '../../hooks/useDashboard'; 
 import formatTimeBRT from '../../utils/formatters/formatTimeBRT';
+import AdvancedAnalytics from '../../components/nav/history/AdvancedAnalytics';
+import type { TemperatureRecord } from '../../types/records/TemperatureRecord';
+
+interface HistoryHeroProps {
+  formValues: {
+    date: string;
+    start: string;
+    end: string;
+    granularity: string;
+  };
+  setFormValues: React.Dispatch<React.SetStateAction<{
+    date: string;
+    start: string;
+    end: string;
+    granularity: string;
+  }>>;
+  onSearch: () => void;
+  isLoading: boolean;
+}
+
+interface StatCardProps {
+  unit: string;
+  color: string;
+  label: string;
+  icon: React.ReactNode;
+  value: string;
+}
 
 
-const HistoryHero = ({ formValues, setFormValues, onSearch, isLoading }: any) => {
+const HistoryHero = ({ formValues, setFormValues, onSearch, isLoading }: HistoryHeroProps) => {
   const [activeCard, setActiveCard] = useState(0);
 
   const cards = [
@@ -86,8 +113,6 @@ const HistoryHero = ({ formValues, setFormValues, onSearch, isLoading }: any) =>
   return (
     <section className="w-full bg-white rounded-[3.5rem] border border-gray-100 shadow-2xl overflow-hidden p-8 lg:p-12 relative">
       <div className="flex flex-col lg:flex-row items-center justify-between gap-16 mb-14">
-        
-        {/* LADO ESQUERDO: TEXTO */}
         <div className="flex-1 text-center lg:text-left z-10">
           <motion.div 
             initial={{ opacity: 0, x: -20 }} 
@@ -97,14 +122,14 @@ const HistoryHero = ({ formValues, setFormValues, onSearch, isLoading }: any) =>
             <LuHistory size={14} /> Data Intelligence
           </motion.div>
           <h1 className="text-5xl lg:text-7xl font-black text-gray-900 tracking-tighter leading-[0.95] mb-8">
-            Histórico <span className="text-brand-purple">Explorável</span>
+            Histórico <span className="text-brand-orange">Explorável</span>
           </h1>
           <p className="text-gray-500 text-lg font-medium max-w-lg leading-relaxed">
-            Mergulhe nos dados da sua estufa. Identifique padrões, calcule variância e gere relatórios científicos com um clique.
+            Consulte os registros de temperatura coletados ao longo do tempo em um ambiente construído 
+            para análise e interpretação, permitindo uma visualização completa de dados e estatísticas do período
           </p>
         </div>
 
-        {/* LADO DIREITO: CAROUSEL STACKED COM GLASSMORPHISM */}
         <div className="flex-1 relative w-full max-w-[420px] h-[320px] flex items-center justify-center">
           <AnimatePresence mode="popLayout">
             {cards.map((card, i) => i === activeCard && (
@@ -127,7 +152,6 @@ const HistoryHero = ({ formValues, setFormValues, onSearch, isLoading }: any) =>
                    {card.content}
                 </div>
 
-                {/* INDICADORES (DENTRO DO CARD) */}
                 <div className="flex gap-1.5 mt-6">
                   {cards.map((_, idx) => (
                     <div 
@@ -142,7 +166,6 @@ const HistoryHero = ({ formValues, setFormValues, onSearch, isLoading }: any) =>
         </div>
       </div>
 
-      {/* PAINEL DE CONTROLE (FILTROS) INTEGRADO */}
       <div className="bg-gray-50/50 p-6 rounded-[2.5rem] border border-gray-100 flex flex-col lg:flex-row gap-6 items-end">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
           <div className="space-y-2">
@@ -189,7 +212,7 @@ const HistoryHero = ({ formValues, setFormValues, onSearch, isLoading }: any) =>
         <button 
           onClick={onSearch}
           disabled={isLoading}
-          className="w-full lg:w-auto px-10 py-4 bg-brand-purple text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-purple/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full lg:w-auto px-10 py-4 bg-brand-orange text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-brand-purple/20 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
         >
           {isLoading ? <LuLoader className="animate-spin" size={18} /> : <LuSearch size={18} />}
           <span>Resgatar Dados</span>
@@ -201,7 +224,7 @@ const HistoryHero = ({ formValues, setFormValues, onSearch, isLoading }: any) =>
 
 export default function HistoryPage() {
   const [formValues, setFormValues] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('en-CA'),
     start: '',
     end: '',
     granularity: '1m'
@@ -218,7 +241,7 @@ export default function HistoryPage() {
   };
 
   const records = data?.records ?? [];
-  const chartData = records.map((record: any) => ({
+  const chartData = records.map((record: TemperatureRecord) => ({
     hour: record.timestamp ? formatTimeBRT(record.timestamp) : '',
     temp: record.value
   }));
@@ -228,15 +251,12 @@ export default function HistoryPage() {
       <Navbar />
       
       <div className="mt-20 space-y-12 max-w-full mx-auto">
-        {/* HERO COM FILTROS INTEGRADOS */}
         <HistoryHero 
           formValues={formValues} 
           setFormValues={setFormValues} 
           onSearch={handleSearch} 
           isLoading={isLoading} 
         />
-
-        {/* ESTATÍSTICAS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             label="Amostragem" 
@@ -260,7 +280,6 @@ export default function HistoryPage() {
           />
         </div>
 
-        {/* GRÁFICO */}
         <div className="bg-white p-8 rounded-[3.5rem] border border-gray-100 shadow-sm h-[500px] flex flex-col">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-3">
@@ -306,7 +325,7 @@ export default function HistoryPage() {
                   type="monotone" 
                   dataKey="temp" 
                   stroke="#d57a25" 
-                  strokeWidth={3} 
+                  strokeWidth={1.3} 
                   fillOpacity={1} 
                   fill="url(#colorValue)" 
                   animationDuration={1500}
@@ -315,12 +334,13 @@ export default function HistoryPage() {
             </ResponsiveContainer>
           </div>
         </div>
+        <AdvancedAnalytics stats={data?.statistics} isLoading={isLoading} />
       </div>
     </div>
   );
 }
 
-const StatCard = ({ label, value, unit, icon, color }: any) => (
+const StatCard = ({ label, value, unit, icon, color }: StatCardProps) => (
   <motion.div 
     whileHover={{ y: -5 }}
     className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center justify-between transition-all"

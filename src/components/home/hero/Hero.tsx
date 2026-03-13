@@ -8,9 +8,6 @@ const Hero = () => {
     <>
     <Navbar />
     <section className="relative w-full min-h-[100vh] flex items-center justify-center bg-gradient-to-b from-white to-gray-50 overflow-hidden pt-28 md:pt-32">
-<div className="absolute top-1/2 -left-1/4 w-[800px] h-[800px] bg-brand-purple/5 rounded-full blur-[120px]"></div>
-
-<div className="absolute bottom-1/4 -right-1/4 w-[800px] h-[800px] bg-brand-orange/5 rounded-full blur-[120px]"></div>
 
       <div className="max-w-8xl mx-auto px-6 lg:px-8 grid lg:grid-cols-2 gap-24 items-center mb-8">
         
@@ -22,7 +19,7 @@ const Hero = () => {
           >
 
             <motion.h1
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-gray-900 tracking-tighter leading-[1.1] mb-6 font-sans"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-5xl font-black text-gray-900 tracking-tighter leading-[1.1] mb-6 font-sans"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}

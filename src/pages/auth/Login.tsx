@@ -6,6 +6,15 @@ import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/auth/authService';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { AxiosError } from 'axios';
+
+interface BackendErrorResponse {
+  message?: string;
+  errors?: {
+    path: string | string[];
+    message: string;
+  }[];
+}
 
 const Login = () => {
 
@@ -36,24 +45,25 @@ const Login = () => {
     await queryClient.invalidateQueries({ queryKey: ['authUser'] });
 
     navigate('/home');
- } catch (err: any) {
+ } catch (err: unknown) {
 
-    const zodErrors = err.response?.data?.errors;
-    const backendMessage = err.response?.data?.message || "Erro ao conectar com o servidor";
+   const axiosError = err as AxiosError<BackendErrorResponse>;
+
+    const zodErrors = axiosError.response?.data?.errors;
+    const backendMessage = axiosError.response?.data?.message || "Erro ao conectar com o servidor";
 
     if (zodErrors && Array.isArray(zodErrors)) {
-      zodErrors.forEach((error: any) => {
+      zodErrors.forEach((error) => {
         toast.error(`${error.path}: ${error.message}`);
       });
     } else {
       toast.error(backendMessage);
       setError(backendMessage); 
     }
-  } finally {
-    setLoading(false);
-  }
-};
-
+} finally {
+  setLoading(false);
+}
+}
 return (
   <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 font-sans">
     <div className="grid lg:grid-cols-2 min-h-screen">

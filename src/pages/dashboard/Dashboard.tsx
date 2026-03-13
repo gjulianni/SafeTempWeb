@@ -30,13 +30,22 @@ import {
 
 import { useHistory } from '../../hooks/useDashboard';
 import Plot from 'react-plotly.js';
-import stdashboard from '../../assets/stdashboard.png';
 import formatTimeBRT from '../../utils/formatters/formatTimeBRT';
 import { LucideArrowDown, LucideArrowUp } from 'lucide-react';
+import type { Layout } from 'plotly.js';
 
 
 const PIE_COLORS = ['#32c5ff', '#4b2a59', '#ff4343'];
 
+const EmptyChartState = ({ title }: { title: string }) => (
+  <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 border-2 border-dashed border-gray-100 rounded-2xl p-10">
+    <div className="p-4 bg-gray-50 rounded-full mb-4">
+      <LuDatabaseBackup size={50} className="text-gray-200" />
+    </div>
+    <p className="font-black uppercase tracking-widest text-[10px] text-gray-400 mb-1">{title}</p>
+    <p className="text-xs font-medium text-gray-400 text-center">Aguardando sincronização com a nuvem...</p>
+  </div>
+);
 
 const Dashboard: React.FC = () => {
 
@@ -67,27 +76,24 @@ const Dashboard: React.FC = () => {
     temp: record.value
   }));
 
-const EmptyChartState = ({ title }: { title: string }) => (
-  <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 border-2 border-dashed border-gray-100 rounded-2xl p-10">
-    <div className="p-4 bg-gray-50 rounded-full mb-4">
-      <LuDatabaseBackup size={50} className="text-gray-200" />
-    </div>
-    <p className="font-black uppercase tracking-widest text-[10px] text-gray-400 mb-1">{title}</p>
-    <p className="text-xs font-medium text-gray-400 text-center">Aguardando sincronização com a nuvem...</p>
-  </div>
-);
+  const boxPlotLayout: Partial<Layout> = { 
+  autosize: true, 
+  margin: { t: 0, b: 20, l: 40, r: 10 },
+  paper_bgcolor: 'rgba(0,0,0,0)',
+  plot_bgcolor: 'rgba(0,0,0,0)',
+  yaxis: {
+    gridcolor: '#f5f5f5',
+    zeroline: false,
+    tickfont: { size: 10, color: '#A3A3A3' }
+  },
+  xaxis: { showticklabels: false }
+};
 
   return (
   <div className="grid grid-cols-[20px_1fr] grid-rows-[80px_1fr] h-screen w-full bg-[#f7f8fc] font-sans">
     <Navbar />
 
     <main className="col-start-2 col-end-3 row-start-2 row-end-3 p-8 overflow-y-auto">
-      <div className='flex items-center justify-center max-w-full mb-8'>
- <img src={stdashboard} className='w-[25%]'/>
-      </div>
-     
-
-  
       <div className="grid grid-cols-3 gap-6">
         
  
@@ -124,6 +130,7 @@ const EmptyChartState = ({ title }: { title: string }) => (
             axisLine={false} 
             tickLine={false} 
             tick={{fontSize: 14, fill: '#A3A3A3', fontWeight: 600}} 
+            minTickGap={30}
             dy={10}
           />
           <YAxis 
@@ -272,18 +279,7 @@ const EmptyChartState = ({ title }: { title: string }) => (
           line: { width: 2 },
           fillcolor: 'rgba(206, 110, 70, 0.1)'
         }]}
-        layout={{ 
-          autosize: true, 
-          margin: { t: 0, b: 20, l: 40, r: 10 },
-          paper_bgcolor: 'rgba(0,0,0,0)',
-          plot_bgcolor: 'rgba(0,0,0,0)',
-          yaxis: {
-            gridcolor: '#f5f5f5',
-            zeroline: false,
-            tickfont: { size: 10, color: '#A3A3A3' }
-          },
-          xaxis: { showticklabels: false }
-        } as any}
+        layout={boxPlotLayout}
         className="w-full h-full"
         useResizeHandler
       />

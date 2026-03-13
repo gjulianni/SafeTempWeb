@@ -22,7 +22,7 @@ const subItems = [
     titulo: 'Consulta de Dados',
     desc: 'Filtros personalizados e geração de gráficos históricos.',
     icon: CalendarSearch,
-    path: '/historico/busca',
+    path: '/historico',
     cor: 'text-brand-orange'
   },
   {

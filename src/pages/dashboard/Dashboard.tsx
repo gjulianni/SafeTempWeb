@@ -25,6 +25,7 @@ import {
   Legend,
   ResponsiveContainer,
   Area,
+  ReferenceLine,
 } from 'recharts';
 
 
@@ -33,6 +34,10 @@ import Plot from 'react-plotly.js';
 import formatTimeBRT from '../../utils/formatters/formatTimeBRT';
 import { LucideArrowDown, LucideArrowUp } from 'lucide-react';
 import type { Layout } from 'plotly.js';
+import DashboardSidebar from '../../components/dashboard/DashboardSidebar';
+import Plotly from 'plotly.js-basic-dist';
+import { exportToCSV } from '../../utils/functions/exportToCSV';
+import { exportToJSON } from '../../utils/functions/exportToJSON';
 
 
 const PIE_COLORS = ['#32c5ff', '#4b2a59', '#ff4343'];
@@ -73,7 +78,8 @@ const Dashboard: React.FC = () => {
   const values = records.map(r => r.value);
   const barData = records.map((record) => ({
     hour: formatTimeBRT(record.timestamp),
-    temp: record.value
+    temp: record.value,
+    isOutlier: data?.statistics?.outliers.includes(record.value)
   }));
 
   const boxPlotLayout: Partial<Layout> = { 
@@ -89,32 +95,52 @@ const Dashboard: React.FC = () => {
   xaxis: { showticklabels: false }
 };
 
+const handleExportBoxplot = () => {
+  const gd = document.getElementById('boxplot-id');
+
+  if (gd) {
+    Plotly.downloadImage(gd, {
+      format: 'png',
+      width: 1200,
+      height: 800,
+      filename: `SafeTemp_Boxplot_${new Date().getTime()}`
+    })
+  } 
+};
+
   return (
-  <div className="grid grid-cols-[20px_1fr] grid-rows-[80px_1fr] h-screen w-full bg-[#f7f8fc] font-sans">
-    <Navbar />
+    <div className="grid grid-cols-[20px_1fr] grid-rows-[80px_1fr] h-screen w-full bg-[#f7f8fc] font-sans">
+      <Navbar />
+      <DashboardSidebar
+        stats={data?.statistics}
+        isLoading={isLoading}
+        onExportBoxplot={handleExportBoxplot}
+        onExportCSV={() => data?.statistics && exportToCSV(data.statistics, "SafeTemp_Stats")}
+        onExportJSON={() => data?.statistics && exportToJSON(data.statistics, "SafeTemp_Stats")}
+      />
 
-    <main className="col-start-2 col-end-3 row-start-2 row-end-3 p-8 overflow-y-auto">
-      <div className="grid grid-cols-3 gap-6">
-        
- 
-<div className="col-span-2 bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 flex flex-col group">
-  <div className="flex justify-between items-start mb-8">
-    <div>
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
-        <h3 className="text-xl font-black text-[#333333] tracking-wide font-arial">Histórico</h3>
-      </div>
-      <p className="text-sm text-gray-400 font-medium">Análise térmica detalhada da última hora</p>
-    </div>
+      <main className="col-start-2 col-end-3 row-start-2 row-end-3 p-8 overflow-y-auto">
 
-    <div className="flex gap-2">
-       <span className="px-3 py-1 bg-gray-50 text-[10px] font-bold text-gray-400 rounded-full border border-gray-100 uppercase tracking-widest">
-         SafeTemp Cloud
-       </span>
-    </div>
-  </div>
+        <div className="grid grid-cols-3 gap-6">
 
-  <div className="w-full h-[400px] -ml-4"> 
+          <div className="col-span-2 bg-white p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 flex flex-col group">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
+                  <h3 className="text-xl font-black text-[#333333] tracking-wide font-arial">Histórico</h3>
+                </div>
+                <p className="text-sm text-gray-400 font-medium">Análise térmica detalhada da última hora</p>
+              </div>
+
+              <div className="flex gap-2">
+                <span className="px-3 py-1 bg-gray-50 text-[10px] font-bold text-gray-400 rounded-full border border-gray-100 uppercase tracking-widest">
+                  SafeTemp Cloud
+                </span>
+              </div>
+            </div>
+
+  <div className="w-full h-[400px] -ml-4 "> 
     {hasData ? (
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -147,16 +173,44 @@ const Dashboard: React.FC = () => {
               padding: '12px 16px'
             }} 
           />
-          <Area 
-            type="monotone" 
-            dataKey="temp" 
-            stroke="#ce6e46" 
-            strokeWidth={2} 
-            fillOpacity={1} 
-            fill="url(#colorTemp)" 
-            animationDuration={1500}
-          />
-        </AreaChart>
+
+            {barData.map((entry, index) => 
+          entry.isOutlier ? (
+            <ReferenceLine 
+              key={`outlier-${index}`}
+              x={entry.hour} 
+              stroke="#ef4444" 
+              strokeDasharray="4 4"
+              label={{ position: 'top', value: '⚠️', fill: '#ef4444', fontSize: 14 }}
+            />
+          ) : null
+        )}
+
+        <Area 
+          type="monotone" 
+          dataKey="temp" 
+          stroke="#ce6e46" 
+          strokeWidth={2} 
+          fillOpacity={1} 
+          fill="url(#colorTemp)" 
+          animationDuration={1500}
+          dot={(props: any) => {
+            const { cx, cy, payload } = props;
+            if (payload.isOutlier) {
+              return (
+                <circle 
+                  cx={cx} cy={cy} r={6} 
+                  fill="#ef4444" 
+                  stroke="white" 
+                  strokeWidth={2} 
+                  className="animate-pulse"
+                />
+              );
+            }
+            return <></>;
+          }}
+        />
+      </AreaChart>
       </ResponsiveContainer>
     ) : <EmptyChartState title="Histórico Térmico" />}
   </div>
@@ -268,6 +322,7 @@ const Dashboard: React.FC = () => {
   <div className="w-full h-[400px] flex-grow">
     {hasData ? (
       <Plot
+        divId='boxplot-id'
         data={[{ 
           y: values, 
           type: 'box', 

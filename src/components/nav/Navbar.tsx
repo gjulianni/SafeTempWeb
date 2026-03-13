@@ -73,12 +73,12 @@ const Navbar = () => {
 
  return (
    <nav className={`
-      fixed top-0 left-0 right-0 z-50 flex justify-center transition-all duration-500 ease-in-out
+      fixed top-0 left-0 right-0 z-30 flex justify-center transition-all duration-500 ease-in-out
       ${activeMenu ? 'p-0' : 'p-4'} 
     `}>
       {activeMenu && (
         <div 
-          className="fixed inset-0 z-40 cursor-default" 
+          className="fixed inset-0 z-30 cursor-default" 
           onClick={() => setActiveMenu(null)} 
         />
       )}
@@ -87,12 +87,12 @@ const Navbar = () => {
         <motion.div 
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           onClick={() => { setActiveMenu(null); setIsOpen(false); }}
-          className="fixed inset-0 bg-black/60 z-30 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 z-20 backdrop-blur-sm"
         />
       )}
     </AnimatePresence>
      <div className={`
-        relative w-full bg-white backdrop-blur-md border border-white/20 shadow-lg px-6 py-3 z-40 transition-all duration-500 ease-in-out
+        relative w-full bg-white backdrop-blur-md border border-white/20 shadow-lg px-6 py-3 z-20 transition-all duration-500 ease-in-out
         ${activeMenu 
           ? 'max-w-full rounded-none border-x-0 border-t-0 shadow-xl' 
           : 'max-w-7xl rounded-[2.5rem]'
@@ -113,7 +113,7 @@ const Navbar = () => {
             <div className="hidden md:flex items-center">
             {linksNavegacao.map((link) => {
               const ativo = isAtivo(link.path);
-              const temSubmenu = link.nome === 'Histórico' || link.nome === 'Comparações';
+              const temSubmenu = link.nome === 'Histórico';
               const isOpen = activeMenu === link.nome;
 
               return (

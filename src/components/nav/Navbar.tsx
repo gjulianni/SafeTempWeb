@@ -92,7 +92,7 @@ const Navbar = () => {
       )}
     </AnimatePresence>
      <div className={`
-        relative w-full bg-white backdrop-blur-md border border-white/20 shadow-lg px-6 py-3 z-20 transition-all duration-500 ease-in-out
+        relative w-full bg-white backdrop-blur-md border border-white/20 shadow-lg px-6 py-3 z-50 transition-all duration-500 ease-in-out
         ${activeMenu 
           ? 'max-w-full rounded-none border-x-0 border-t-0 shadow-xl' 
           : 'max-w-7xl rounded-[2.5rem]'

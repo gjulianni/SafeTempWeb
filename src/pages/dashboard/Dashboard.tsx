@@ -38,6 +38,8 @@ import DashboardSidebar from '../../components/dashboard/DashboardSidebar';
 import Plotly from 'plotly.js-basic-dist';
 import { exportToCSV } from '../../utils/functions/exportToCSV';
 import { exportToJSON } from '../../utils/functions/exportToJSON';
+import { AnimatePresence } from 'framer-motion';
+import { AIInsightCard } from '../../components/dashboard/AIInsightCard';
 
 
 const PIE_COLORS = ['#32c5ff', '#4b2a59', '#ff4343'];
@@ -56,6 +58,7 @@ const Dashboard: React.FC = () => {
 
   const { data, isLoading, isError } = useHistory();
   const [thresholds, setThresholds] = React.useState({ cold: 20, hot: 25 });
+  const [currentInsight, setCurrentInsight] = React.useState<string | null>(null);
 
   if (isLoading) return <div className="p-10 text-center font-bold">Carregando...</div>;
   if (isError || !data?.records) return <div className="p-10 text-center text-red-500">Erro.</div>;
@@ -117,9 +120,18 @@ const handleExportBoxplot = () => {
         onExportBoxplot={handleExportBoxplot}
         onExportCSV={() => data?.statistics && exportToCSV(data.statistics, "SafeTemp_Stats")}
         onExportJSON={() => data?.statistics && exportToJSON(data.statistics, "SafeTemp_Stats")}
+        onInsightSuccess={(text) => setCurrentInsight(text)}
       />
 
       <main className="col-start-2 col-end-3 row-start-2 row-end-3 p-8 overflow-y-auto">
+        <AnimatePresence>
+          {currentInsight && (
+            <AIInsightCard 
+              text={currentInsight} 
+              onClose={() => setCurrentInsight(null)} 
+            />
+          )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-3 gap-6">
 

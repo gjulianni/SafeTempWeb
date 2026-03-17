@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LuSettings, LuX, LuFileJson, LuDownload, LuImage } from 'react-icons/lu';
+import { LuSettings, LuX, LuFileJson, LuDownload, LuImage, LuChevronUp, LuChevronDown, LuBrainCircuit } from 'react-icons/lu';
 import type { TemperatureStatistics } from '../../types/statistics/TemperatureStatistics';
+import { useGenerateInsight } from '../../hooks/useInsight';
+import type { GreenhouseContext } from '../../types/insightContext';
 
 interface DashboardSidebarProps {
   stats: TemperatureStatistics | undefined;
@@ -9,11 +11,58 @@ interface DashboardSidebarProps {
   onExportBoxplot: () => void;
   onExportCSV: () => void;
   onExportJSON: () => void;
+  onInsightSuccess: (text: string) => void;
 }
 
-export const DashboardSidebar = ({ stats, isLoading, onExportBoxplot, onExportCSV, onExportJSON }: DashboardSidebarProps) => {
+export const DashboardSidebar = ({ stats, isLoading, onExportBoxplot, onExportCSV, onExportJSON, onInsightSuccess }: DashboardSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
+  const [contextText, setContextText] = useState('');
+  const [culture, setCulture] = useState('');
+  const [stage, setStage] = useState(''); 
+  const [minTemp, setMinTemp] = useState('');
+  const [maxTemp, setMaxTemp] = useState('');
+  const [criticalTemp, setCriticalTemp] = useState('');
+  const [equipmentText, setEquipmentText] = useState('');
+
+  const mutation = useGenerateInsight();
+ 
+  const handleGenerateInsight = () => {
+    if (!contextText.trim()) {
+      alert("Por favor, descreva o que está acontecendo na estufa.");
+      return;
+    }
+
+    const payload: GreenhouseContext = showAdvanced 
+      ? {
+          mode: 'experiment',
+          text: contextText,
+          culture: culture || 'Não informada',
+          stage: stage,
+          thresholds: {
+            min: Number(minTemp) || 0,
+            max: Number(maxTemp) || 0,
+            criticalMax: Number(criticalTemp) || 0,
+          },
+          equipment: equipmentText.split(',').map(item => item.trim()).filter(i => i !== ''),
+        }
+      : {
+          mode: 'general',
+          text: contextText,
+        };
+
+    mutation.mutate(payload, {
+      onSuccess: (data) => {
+        onInsightSuccess(data.insight);
+        setIsOpen(false); 
+      },
+      onError: (err: any) => {
+        const msg = err.response?.data?.message || "Erro ao conectar com o serviço de IA.";
+        alert(msg);
+      }
+    });
+  };
   return (
     <>
       {!isOpen && (
@@ -102,16 +151,101 @@ export const DashboardSidebar = ({ stats, isLoading, onExportBoxplot, onExportCS
                 </div>
               </div>
 
-    <div className="bg-brand-purple/5 p-6 rounded-[2.5rem] border border-brand-purple/10">
-      <p className="text-[10px] font-black text-brand-purple uppercase mb-4">IA Quick Insight</p>
+    <div className="bg-brand-purple/5 p-6 rounded-[2.5rem] border border-brand-purple/10 transition-all duration-300">
+      <div className="flex items-center gap-2 mb-4">
+        <LuBrainCircuit className="text-brand-purple" size={18} />
+        <p className="text-[10px] font-black text-brand-purple uppercase tracking-widest">
+          IA Quick Insight
+        </p>
+      </div>
+
       <p className="text-[11px] text-gray-500 leading-relaxed mb-4">
-        Solicite uma análise rápida do comportamento térmico da última hora.
+        Forneça o contexto para uma análise rápida e precisa do comportamento térmico.
       </p>
-      <button className="w-full cursor-pointer py-3 bg-brand-purple text-white rounded-xl text-[10px] hover:scale-[1.025] transition-all transition-100 font-black uppercase tracking-widest">
-        Gerar Insight
-      </button>
-    </div>
-  </div>
+     <div className="space-y-3">
+                    <textarea
+                      value={contextText}
+                      onChange={(e) => setContextText(e.target.value)}
+                      placeholder="Ex: Monitorando germinação de mudas..."
+                      className="w-full h-20 p-3 text-xs bg-white border border-brand-purple/10 rounded-2xl focus:ring-2 focus:ring-brand-purple/20 focus:border-brand-purple outline-none transition-all resize-none placeholder:text-gray-300"
+                    />
+
+                    <button
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className="flex items-center gap-2 text-[9px] font-black uppercase text-brand-purple/60 hover:text-brand-purple transition-colors ml-1 cursor-pointer"
+                    >
+                      {showAdvanced ? <LuChevronUp size={12} /> : <LuChevronDown size={12} />}
+                      {showAdvanced ? 'Ocultar Detalhes' : 'Vincular Experimento (Opcional)'}
+                    </button>
+
+                    <AnimatePresence>
+                      {showAdvanced && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden space-y-3"
+                        >
+                          <div className="pt-2 space-y-3">
+                            <input
+                              type="text"
+                              value={culture}
+                              onChange={(e) => setCulture(e.target.value)}
+                              placeholder="Cultura (ex: Alface)"
+                              className="w-full p-2.5 text-[11px] bg-white border border-gray-100 rounded-xl outline-none focus:border-brand-purple/30"
+                            />
+                            <input 
+                                type="text" 
+                                value={stage}
+                                onChange={(e) => setStage(e.target.value)}
+                                placeholder="Estágio (ex: Germinação)" 
+                                className="w-full p-2.5 text-[11px] bg-white border border-gray-100 rounded-xl outline-none focus:border-brand-purple/30" 
+                              />
+                            <div className="grid grid-cols-3 gap-2">
+                              <input 
+                                type="number" 
+                                value={minTemp}
+                                onChange={(e) => setMinTemp(e.target.value)}
+                                placeholder="Min" 
+                                className="p-2 text-center text-[10px] bg-white border border-gray-100 rounded-lg outline-none" 
+                              />
+                              <input 
+                                type="number" 
+                                value={maxTemp}
+                                onChange={(e) => setMaxTemp(e.target.value)}
+                                placeholder="Max" 
+                                className="p-2 text-center text-[10px] bg-white border border-gray-100 rounded-lg outline-none" 
+                              />
+                              <input 
+                                type="number" 
+                                value={criticalTemp}
+                                onChange={(e) => setCriticalTemp(e.target.value)}
+                                placeholder="Crítico" 
+                                className="p-2 text-center text-[10px] bg-white border border-gray-100 rounded-lg outline-none" 
+                              />
+                            </div>
+                            <input
+                              type="text"
+                              value={equipmentText}
+                              onChange={(e) => setEquipmentText(e.target.value)}
+                              placeholder="Equipamentos (ex: Exaustor, Cooler)"
+                              className="w-full p-2.5 text-[11px] bg-white border border-gray-100 rounded-xl outline-none focus:border-brand-purple/30"
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <button 
+                      onClick={handleGenerateInsight}
+                      disabled={mutation.isPending}
+                      className="w-full cursor-pointer py-3.5 bg-brand-purple text-white rounded-2xl text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all font-black uppercase tracking-widest shadow-lg shadow-brand-purple/20 mt-2 disabled:opacity-50 disabled:cursor-wait"
+                    >
+                      {mutation.isPending ? 'Analisando Dados...' : 'Gerar Insight'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </motion.aside>
           </>
         )}
@@ -121,36 +255,3 @@ export const DashboardSidebar = ({ stats, isLoading, onExportBoxplot, onExportCS
 };
 
 export default DashboardSidebar;
-
- <aside className="fixed left-0 top-0 h-full w-80 bg-white/80 backdrop-blur-xl border-l border-gray-100 p-8 shadow-2xl z-50">
-  <div className="flex items-center gap-3 mb-12">
-    <div className="p-2 bg-brand-orange/10 text-brand-orange rounded-xl">
-      <LuSettings size={20} />
-    </div>
-    <h2 className="text-sm font-black uppercase tracking-widest text-gray-900">Ações de Controle</h2>
-  </div>
-
-  <div className="space-y-10">
-    <div className="space-y-4">
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Exportar Dados</p>
-      <button className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-brand-orange/5 rounded-2xl transition-all group">
-        <div className="flex items-center gap-3">
-          <LuFileJson className="text-gray-400 group-hover:text-brand-orange" />
-          <span className="text-xs font-bold text-gray-600">Dados Brutos (JSON)</span>
-        </div>
-        <LuDownload size={14} className="text-gray-300" />
-      </button>
-      {/* ... outros botões ... */}
-    </div>
-
-    <div className="bg-brand-purple/5 p-6 rounded-[2.5rem] border border-brand-purple/10">
-      <p className="text-[10px] font-black text-brand-purple uppercase mb-4">IA Quick Insight</p>
-      <p className="text-[11px] text-gray-500 leading-relaxed mb-4">
-        Solicite uma análise rápida do comportamento térmico da última hora.
-      </p>
-      <button className="w-full py-3 bg-brand-purple text-white rounded-xl text-[10px] font-black uppercase tracking-widest">
-        Gerar Insight
-      </button>
-    </div>
-  </div>
-</aside>

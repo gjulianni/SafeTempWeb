@@ -31,7 +31,7 @@ import {
 
 import { useHistory } from '../../hooks/useDashboard';
 import Plot from 'react-plotly.js';
-import formatTimeBRT from '../../utils/formatters/formatTimeBRT';
+import { formatTimeBRT } from '../../utils/formatters/formatTimeBRT';
 import { LucideArrowDown, LucideArrowUp } from 'lucide-react';
 import type { Layout } from 'plotly.js';
 import DashboardSidebar from '../../components/dashboard/DashboardSidebar';

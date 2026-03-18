@@ -9,6 +9,7 @@ import { Toaster } from 'sonner';
 import Register from './pages/auth/Register';
 import MobileDeviceAlert from './components/mobileAlert/MobileDeviceAlert';
 import HistoryPage from './pages/history/HistoryPage';
+import ComparisonPage from './pages/comparison/ComparisonPage';
 
 function App() {
     
@@ -41,6 +42,8 @@ function App() {
                 <Route path='/historico/relatorios' element={<ReportsPage />}
                 />
                 <Route path='/historico' element={<HistoryPage />}
+                />
+                <Route path='/historico/comparar' element={<ComparisonPage />}
                 />
                 <Route path="*" element={<Home />} />
             </Routes>

@@ -15,7 +15,7 @@ import api from '../../services/api';
 const linksNavegacao = [
   { nome: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { nome: 'Histórico', path: '/historico', icon: History },
-  { nome: 'Comparações', path: '/comparacoes', icon: GitCompare },
+  { nome: 'Comparações', path: '/historico/comparar', icon: GitCompare },
   { nome: 'Configurações', path: '/config', icon: Settings },
 ];
 

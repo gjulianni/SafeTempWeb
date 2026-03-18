@@ -4,6 +4,7 @@ import { LuSettings, LuX, LuFileJson, LuDownload, LuImage, LuChevronUp, LuChevro
 import type { TemperatureStatistics } from '../../types/statistics/TemperatureStatistics';
 import { useGenerateInsight } from '../../hooks/useInsight';
 import type { GreenhouseContext } from '../../types/insightContext';
+import { useAuth } from '../../contexts/auth/authContext';
 
 interface DashboardSidebarProps {
   stats: TemperatureStatistics | undefined;
@@ -17,6 +18,8 @@ interface DashboardSidebarProps {
 export const DashboardSidebar = ({ stats, isLoading, onExportBoxplot, onExportCSV, onExportJSON, onInsightSuccess }: DashboardSidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const { isAuthenticated } = useAuth();
 
   const [contextText, setContextText] = useState('');
   const [culture, setCulture] = useState('');
@@ -238,7 +241,7 @@ export const DashboardSidebar = ({ stats, isLoading, onExportBoxplot, onExportCS
 
                     <button 
                       onClick={handleGenerateInsight}
-                      disabled={mutation.isPending}
+                      disabled={mutation.isPending || !isAuthenticated}
                       className="w-full cursor-pointer py-3.5 bg-brand-purple text-white rounded-2xl text-[10px] hover:scale-[1.02] active:scale-[0.98] transition-all font-black uppercase tracking-widest shadow-lg shadow-brand-purple/20 mt-2 disabled:opacity-50 disabled:cursor-wait"
                     >
                       {mutation.isPending ? 'Analisando Dados...' : 'Gerar Insight'}

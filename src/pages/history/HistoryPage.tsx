@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import Navbar from '../../components/nav/Navbar';
 import { useData } from '../../hooks/useDashboard'; 
-import formatTimeBRT from '../../utils/formatters/formatTimeBRT';
+import { formatTimeBRT } from '../../utils/formatters/formatTimeBRT';
 import AdvancedAnalytics from '../../components/nav/history/AdvancedAnalytics';
 import type { TemperatureRecord } from '../../types/records/TemperatureRecord';
 

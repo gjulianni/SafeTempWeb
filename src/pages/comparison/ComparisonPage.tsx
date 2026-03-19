@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
 import { useComparison } from "../../hooks/useComparison";
-import { LuActivity, LuArrowDownRight, LuArrowRightLeft, LuArrowUpRight, LuCheckCheck, LuShieldAlert, LuShieldCheck, LuThermometer } from "react-icons/lu";
+import { LuActivity, LuArrowDownRight, LuArrowRightLeft, LuArrowUpRight, LuCalendar, LuInfo, LuRefreshCw, LuSettings2, LuShieldAlert, LuShieldCheck, LuShieldOff, LuSparkles, LuThermometer } from "react-icons/lu";
 import Navbar from "../../components/nav/Navbar";
-import { formatTimeBRT, getLocalDateString } from "../../utils/formatters/formatTimeBRT";
+import { formatTimeBRT } from "../../utils/formatters/formatTimeBRT";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { motion } from "framer-motion";
+import ComparisonSummaryCard from "../../components/comparison/ComparisonSummaryCard";
 
 export interface HistoryPoint {
   timestamp: string;   // ISO string
@@ -17,8 +19,9 @@ const ComparisonPage = () => {
   yesterday.setDate(yesterday.getDate() - 1);
 
  
-  const [dateA, setDateA] = useState(getLocalDateString(yesterday));
-  const [dateB, setDateB] = useState(getLocalDateString(new Date()));
+  const [dateA, setDateA] = useState("");
+  const [dateB, setDateB] = useState("");
+  const [granularity, setGranularity] = useState('10m');
 
 
  const { data, isLoading, isError, refetch } = useComparison({ 
@@ -44,137 +47,452 @@ const ComparisonPage = () => {
     }));
   }, [seriesB]);
 
-  if (isLoading) {
-    return <div className="p-20 text-center animate-pulse">Carregando análise...</div>;
+
+const handleUpdate = () => {
+    if (dateA && dateB) refetch();
+  };
+
+  const getReliabilityStyles = (reliability: string) => {
+  switch (reliability) {
+    case 'alta':
+      return { 
+        color: 'text-green-600', 
+        border: 'border-green-500', 
+        bg: 'bg-green-50', 
+        icon: <LuShieldCheck size={18} />, 
+        label: 'Dados Confiáveis' 
+      };
+    case 'limitada':
+      return { 
+        color: 'text-amber-600', 
+        border: 'border-amber-500', 
+        bg: 'bg-amber-50', 
+        icon: <LuShieldAlert size={18} />, 
+        label: 'Confiabilidade Limitada' 
+      };
+    case 'baixa':
+      return { 
+        color: 'text-red-600', 
+        border: 'border-red-500', 
+        bg: 'bg-red-50', 
+        icon: <LuShieldOff size={18} />, 
+        label: 'Atenção: Baixa Confiabilidade' 
+      };
+    default:
+      return { 
+        color: 'text-slate-500', 
+        bg: 'bg-slate-50', 
+        border: 'border-slate-200',
+        icon: <LuInfo size={18} />, 
+        label: 'Análise de Equilíbrio' 
+      };
   }
-
-  if (isError || !data) {
-    return <div className="p-20 text-center text-red-500">Erro ao carregar comparação.</div>;
-  }
- 
-  const handleDateAChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateA(e.target.value);
-  };
-
-  const handleDateBChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDateB(e.target.value);
-  };
-
-  const handleUpdate = () => {
-    refetch();
-  };
+};
 
   return (
-    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+    <div className="p-3 max-w-full mx-auto">
       <Navbar />
 
-      <header className="flex flex-col md:flex-row justify-between items-end gap-6 bg-white p-8 rounded-[2rem] shadow-sm border border-gray-50">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-black text-gray-800">Comparação de Períodos</h2>
-          <p className="text-sm text-gray-400 font-medium">Analise a evolução térmica entre duas datas distintas</p>
-        </div>
-
-        <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-3xl border border-gray-100">
-          <div className="flex flex-col px-4">
-            <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest">Série A</span>
-            <input 
-              type="date" 
-              value={dateA} 
-              onChange={handleDateAChange}
-              className="bg-transparent font-bold text-sm outline-none cursor-pointer"
-            />
-          </div>
-          
-          <div className="p-2 bg-white rounded-full shadow-sm text-gray-300">
-            <LuArrowRightLeft size={18} />
-          </div>
-
-          <div className="flex flex-col px-4">
-            <span className="text-[10px] font-black text-brand-orange uppercase tracking-widest">Série B</span>
-            <input 
-              type="date" 
-              value={dateB} 
-              onChange={handleDateBChange}
-              className="bg-transparent font-bold text-sm outline-none cursor-pointer"
-            />
-          </div>
-
-          <button 
-            onClick={handleUpdate}
-            disabled={isLoading}
-            className="bg-brand-purple text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-brand-purple/20 disabled:opacity-50"
+<section className="w-full mt-30 bg-white overflow-hidden p-8 lg:p-12 relative">
+      
+      {/* ESTA DIV É A CHAVE: 
+          1. max-w-6xl ou 7xl define o limite máximo de onde o conteúdo pode se espalhar.
+          2. mx-auto centraliza esse bloco no meio da section w-full.
+          3. justify-center traz os dois lados para o centro.
+          4. gap-24 (ou o valor que você preferir) define a distância exata entre o texto e o card.
+      */}
+      <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-64 mb-8">
+        
+        {/* Lado Esquerdo: Introdução */}
+        <div className="flex-1 max-w-xl text-center lg:text-left z-10">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }} 
+            animate={{ opacity: 1, x: 0 }}
+            className="inline-flex items-center gap-2 px-3 py-1 bg-brand-purple/10 text-brand-purple rounded-full mb-6 text-[10px] font-black uppercase tracking-widest"
           >
-            {isLoading ? 'Carregando...' : 'Atualizar'}
-          </button>
+            <LuArrowRightLeft size={14} /> Data Intelligence
+          </motion.div>
+          
+          <h1 className="text-5xl lg:text-7xl font-black text-gray-900 tracking-tighter leading-[0.95] mb-8">
+            Análise <span className="text-brand-purple">Relativa</span>
+          </h1>
+          
+          <p className="text-gray-500 text-lg font-medium leading-relaxed">
+            Estabeleça correlações térmicas comparando dois períodos distintos. 
+            Identifique padrões de estabilidade, oscilações e outliers para validar 
+            a integridade do seu experimento laboratorial.
+          </p>
         </div>
-      </header>
 
-      {/* Renderização condicional dos dados vindos do hook */}
-      {isLoading ? (
-        <div className="flex justify-center p-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-brand-purple" />
+        {/* Lado Direito: O Card de Tendências */}
+      <div className="flex-1 relative w-full max-w-[580px] h-[340px] z-10">
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+    animate={{ opacity: 1, scale: 1, y: 0 }}
+    className="p-8 rounded-[3.5rem] text-white shadow-[0_35px_60px_-15px_rgba(106,17,203,0.4)] w-full h-full bg-gradient-to-br from-brand-purple via-purple-600 to-purple-800 border border-white/20 flex flex-col justify-between overflow-hidden relative"
+  >
+    {/* Glow decorativo de fundo */}
+    <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+
+    {/* Header do Card */}
+    <div className="flex items-center justify-between relative z-10">
+      <div className="flex items-center gap-3">
+        <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
+          <LuArrowRightLeft size={22} className="text-purple-100" />
         </div>
+        <div>
+          <h4 className="font-black text-xl tracking-tight leading-none">Tendências Cruzadas</h4>
+          <p className="text-purple-200/50 text-[10px] font-bold uppercase tracking-widest mt-1">Cross-Period Analysis</p>
+        </div>
+      </div>
+      <div className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">SafeTemp v3.0</div>
+    </div>
+
+    {/* Área de Conteúdo Central (Gráfico + Tabela Lado a Lado) */}
+    <div className="flex items-center gap-8 py-4 relative z-10">
+      
+      {/* 1. Lado Esquerdo: Animação SVG das Linhas */}
+      <div className="flex-1">
+        <svg viewBox="0 0 100 50" className="w-full h-24 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+          {/* Série A: Sólida */}
+          <motion.path
+            d="M0 35 Q 20 10, 40 25 T 80 15 T 100 5"
+            fill="none"
+            stroke="white"
+            strokeWidth="3"
+            strokeLinecap="round"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          />
+          {/* Série B: Tracejada */}
+          <motion.path
+            d="M0 20 Q 30 40, 50 20 T 80 30 T 100 10"
+            fill="none"
+            stroke="#FDBA74"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="4 4"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 3, repeat: Infinity, delay: 0.5, ease: "easeInOut" }}
+          />
+        </svg>
+      </div>
+
+      {/* 2. Lado Direito: Mini Tabela Comparativa (Estilo Log) */}
+      <div className="w-[200px] shrink-0 font-mono text-[10px] bg-black/20 backdrop-blur-lg p-4 rounded-3xl border border-white/10 shadow-2xl">
+        <div className="flex justify-between text-white/30 border-b border-white/5 pb-2 mb-2 font-black uppercase tracking-tighter">
+          <span>Métrica</span>
+          <span>A vs B</span>
+        </div>
+        
+        <div className="space-y-2.5">
+          <div className="flex justify-between items-center group">
+            <span className="text-white/50 group-hover:text-white transition-colors">MÉDIA</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-white/90">25.4</span>
+              <LuArrowRightLeft size={8} className="text-white/20" />
+              <span className="text-green-400 font-bold">26.2</span>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center group">
+            <span className="text-white/50 group-hover:text-white transition-colors">VAR (%)</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-white/90">1.2</span>
+              <LuArrowRightLeft size={8} className="text-white/20" />
+              <span className="text-red-400 font-bold">0.8</span>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center group">
+            <span className="text-white/50 group-hover:text-white transition-colors">STAB.</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-white/90">HIGH</span>
+              <LuArrowRightLeft size={8} className="text-white/20" />
+              <span className="text-purple-300 font-bold underline decoration-dotted">CRIT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Footer do Card */}
+    <div className="flex items-center justify-between pt-4 border-t border-white/10 relative z-10">
+      <div className="flex items-center gap-2 text-[9px] font-black uppercase text-purple-200/60 tracking-tighter">
+        <LuSparkles size={12} className="animate-pulse" /> 
+        AI Statistical Engine Active
+      </div>
+      <div className="flex gap-1">
+        <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+        <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+        <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
+      </div>
+    </div>
+  </motion.div>
+</div>
+      </div>
+
+      {/* 2. Parte Inferior: Barra de Seleção de Datas */}
+      <div className="bg-gray-50/50 p-6 rounded-[0.5rem] border border-gray-100 flex flex-col lg:flex-row gap-6 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+          {/* Seletor Série A */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Período de Referência (A)</label>
+            <div className="relative flex items-center">
+              <LuCalendar className="absolute left-4 text-brand-purple" size={16} />
+              <input 
+                type="date" 
+                value={dateA}
+                onChange={(e) => setDateA(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 ring-brand-purple/20 transition-all cursor-pointer" 
+              />
+            </div>
+          </div>
+
+          {/* Seletor Série B */}
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Período de Comparação (B)</label>
+            <div className="relative flex items-center">
+              <LuCalendar className="absolute left-4 text-brand-orange" size={16} />
+              <input 
+                type="date" 
+                value={dateB}
+                onChange={(e) => setDateB(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl text-xs font-bold outline-none focus:ring-2 ring-brand-orange/20 transition-all cursor-pointer" 
+              />
+            </div>
+          </div>
+        </div>
+        
+        <button 
+          onClick={handleUpdate}
+          disabled={isLoading || !dateA || !dateB}
+          className="w-full lg:w-auto px-12 py-4 bg-brand-purple text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-xl shadow-brand-purple/20 disabled:opacity-30 flex items-center justify-center gap-3 cursor-pointer"
+        >
+          {isLoading ? (
+            <LuRefreshCw className="animate-spin" size={18} />
+          ) : (
+            <LuArrowRightLeft size={18} />
+          )}
+          <span>Iniciar Comparação</span>
+        </button>
+      </div>
+    </section>      {isLoading ? (
+        <div className="p-20 text-center animate-pulse text-gray-400 font-bold">Gerando estatísticas térmicas...</div>
       ) : isError ? (
-        <div className="p-10 text-center text-red-500 bg-red-50 rounded-[2rem]">
-          Erro ao carregar comparação. Verifique os períodos selecionados.
+        <div className="p-10 text-center text-red-500 bg-red-50 rounded-[2rem] border border-red-100">
+          <LuShieldAlert size={40} className="mx-auto mb-4 opacity-50" />
+          <p className="font-bold">Erro ao carregar comparação.</p>
+          <p className="text-xs opacity-70">Certifique-se de que ambos os períodos possuem dados registrados.</p>
         </div>
-      ) : (
-        <>
-       <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 bg-white p-6 rounded-[2rem] border-l-4 border-l-green-500 shadow-sm flex items-center justify-between">
-          <div className="flex gap-4 items-center">
-            <div className="p-3 bg-green-50 text-green-500 rounded-2xl">
-              <LuCheckCheck size={24} />
+      ) : !data ? (
+        // Estado Inicial (Placeholder)
+        <div className="p-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-gray-100">
+          <LuCalendar size={48} className="mx-auto text-gray-200 mb-4" />
+          <h3 className="text-xl font-bold text-gray-300">Escolha as datas acima para iniciar a análise.</h3>
+        </div>
+          ) : (
+            // RESULTADOS (Só renderiza se 'data' existir e não houver erro)
+            <div className="space-y-8 animate-in fade-in duration-700">
+              {/* Gráficos */}
+<section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  {/* CARD GRÁFICO - SÉRIE A */}
+  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50 flex flex-col">
+    {/* Header: Título + Data Badge */}
+    <div className="flex justify-between items-center mb-8">
+      <div className="space-y-1">
+        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Tendência Série A</h3>
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1 bg-brand-purple/10 text-brand-purple rounded-full text-[10px] font-black">
+            {dateA || 'Selecione uma data'}
+          </span>
+        </div>
+      </div>
+      <div className="p-3 bg-gray-50 rounded-2xl text-brand-purple">
+        <LuActivity size={20} />
+      </div>
+    </div>
+
+    {/* Gráfico */}
+    <div className="h-[280px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartDataA}>
+          <defs>
+            <linearGradient id="colorA" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#962fd6" stopOpacity={0.3}/>
+              <stop offset="95%" stopColor="#962fd6" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+          <XAxis 
+            dataKey="displayTime" 
+            interval="preserveStartEnd" 
+            minTickGap={60} 
+            tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 700 }}
+            axisLine={false} 
+            tickLine={false}
+            dy={10}
+          />
+          <YAxis hide domain={['auto', 'auto']} />
+          <Tooltip 
+            contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
+          />
+          <Area type="monotone" dataKey="value" stroke="#962fd6" fill="url(#colorA)" strokeWidth={1.2} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+
+    {/* Footer: Seletor de Drill-down */}
+    <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <LuSettings2 size={14} className="text-gray-300" />
+        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Drill-down</span>
+      </div>
+      <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+        {['1m', '5m', '10m', '30m', '1h'].map((opt) => (
+          <button
+            key={opt}
+            onClick={() => setGranularity(opt)}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+              granularity === opt 
+                ? 'bg-brand-purple text-white shadow-lg shadow-brand-purple/20' 
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  {/* CARD GRÁFICO - SÉRIE B (Repita a estrutura, mudando as cores e as variáveis para B) */}
+  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50 flex flex-col">
+    <div className="flex justify-between items-center mb-8">
+      <div className="space-y-1">
+        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Tendência Série B</h3>
+        <span className="px-3 py-1 bg-brand-orange/10 text-brand-orange rounded-full text-[10px] font-black">
+          {dateB || 'Selecione uma data'}
+        </span>
+      </div>
+      <div className="p-3 bg-gray-50 rounded-2xl text-brand-orange">
+        <LuActivity size={20} />
+      </div>
+    </div>
+
+    <div className="h-[280px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartDataB}>
+          <defs>
+            <linearGradient id="colorB" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#ce6e46" stopOpacity={0.3}/>
+              <stop offset="95%" stopColor="#ce6e46" stopOpacity={0}/>
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+          <XAxis 
+            dataKey="displayTime" 
+            interval="preserveStartEnd" 
+            minTickGap={60} 
+            tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 700 }}
+            axisLine={false} 
+            tickLine={false}
+            dy={10}
+          />
+          <YAxis hide domain={['auto', 'auto']} />
+          <Tooltip contentStyle={{ borderRadius: '1rem', border: 'none' }} />
+          <Area type="monotone" dataKey="value" stroke="#ce6e46" fill="url(#colorB)" strokeWidth={1.2} />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+
+    <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
+      <div className="flex items-center gap-2">
+        <LuSettings2 size={14} className="text-gray-300" />
+        <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Drill-down</span>
+      </div>
+      <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+        {['1m', '5m', '10m', '30m', '1h'].map((opt) => (
+          <button
+            key={opt}
+            onClick={() => setGranularity(opt)}
+            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all ${
+              granularity === opt 
+                ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
+
+          {/* Cards de Paridade */}
+
+<section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+  
+  {/* 1. Lado Esquerdo: Equilíbrio de Amostragem (Releitura do anterior para o novo layout) */}
+  {(() => {
+    const reliabilityConfig = getReliabilityStyles(data.balanceAnalysis.reliability);
+    const ratioPercent = (data.balanceAnalysis.ratio * 100).toFixed(0);
+
+    return (
+      <div className={`bg-white p-8 rounded-[2.5rem] border-t-8 ${reliabilityConfig.border} shadow-xl shadow-slate-200/40 flex flex-col justify-between`}>
+        <div>
+          <div className="flex justify-between items-center mb-8">
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-xl ${reliabilityConfig.bg} ${reliabilityConfig.color}`}>
+              {reliabilityConfig.icon}
+              <span className="text-[10px] font-black uppercase tracking-widest">{reliabilityConfig.label}</span>
             </div>
-            <div>
-              <h4 className="font-bold text-gray-800">Equilíbrio de Amostragem</h4>
-              <p className="text-xs text-gray-400">Dados equivalentes para uma análise robusta</p>
+            <span className="text-2xl font-black text-slate-800">{ratioPercent}%</span>
+          </div>
+
+          <h3 className="text-xl font-black text-slate-800 mb-4">Equilíbrio de Amostragem</h3>
+          
+          <div className="relative h-2.5 w-full bg-slate-100 rounded-full overflow-hidden mb-8">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${ratioPercent}%` }}
+              className={`absolute top-0 left-0 h-full ${reliabilityConfig.color.replace('text', 'bg')}`}
+            />
+          </div>
+
+          {/* Versão compacta da grid de detalhes para caber no 50/50 */}
+          <div className="space-y-4 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-black text-slate-400 uppercase">Série A (Ref)</span>
+              <span className="text-sm font-black text-slate-700">{data.rangeA.totalRecords} regs</span>
+            </div>
+            <div className="h-[1px] bg-slate-200 w-full" />
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] font-black text-slate-400 uppercase">Série B (Comp)</span>
+              <span className="text-sm font-black text-slate-700">{data.rangeB.totalRecords} regs</span>
             </div>
           </div>
-          <div className="text-right">
-            <span className="text-2xl font-black text-gray-800">98%</span>
-            <p className="text-[10px] font-black text-gray-300 uppercase">Paridade</p>
-          </div>
         </div>
 
-        <div className="bg-brand-purple text-white p-6 rounded-[2rem] shadow-xl shadow-brand-purple/10 flex flex-col justify-center">
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Veredito</span>
-          <p className="text-lg font-bold">Período B é 12% mais estável</p>
+        <div className="mt-8 flex items-start gap-3 p-4 bg-brand-orange/5 rounded-2xl border border-dashed border-brand-orange/20">
+          <LuShieldAlert className="text-brand-orange mt-1 shrink-0" size={16} />
+          <p className="text-[11px] text-slate-500 font-medium leading-relaxed italic">
+            O desbalanceamento {data.balanceAnalysis.imbalanceLevel} pode influenciar a percepção de estabilidade entre os períodos.
+          </p>
         </div>
-      </section>
+      </div>
+    );
+  })()}
 
-      {/* 3. Gráficos Comparativos Lado a Lado */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-50">
-          <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Tendência Série A</h3>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartDataA}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
-                <XAxis dataKey="displayTime" hide />
-                <YAxis hide domain={['auto', 'auto']} />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#962fd6" fill="#962fd6" fillOpacity={0.1} strokeWidth={3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+  {/* 2. Lado Direito: Sumário da IA */}
+  <ComparisonSummaryCard summary={data.summary} />
 
-        <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-50">
-          <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">Tendência Série B</h3>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartDataB}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f5f5f5" />
-                <XAxis dataKey="displayTime" hide />
-                <YAxis hide domain={['auto', 'auto']} />
-                <Tooltip />
-                <Area type="monotone" dataKey="value" stroke="#ce6e46" fill="#ce6e46" fillOpacity={0.1} strokeWidth={3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </section>
+</section>
+
+          {/* Grupos de Estatísticas */}
+               
 <section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-50 space-y-12">
   <div className="space-y-2">
     <h3 className="text-2xl font-black text-gray-800">Detalhamento Estatístico</h3>
@@ -293,71 +611,7 @@ const ComparisonPage = () => {
     </div>
   </div>
 </section>
-<section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  
-  {/* Card Principal de Paridade */}
-  <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50 space-y-6">
-    <div className="flex justify-between items-start">
-      <div className="space-y-1">
-        <h4 className="text-lg font-black text-gray-800">Equilíbrio de Amostragem</h4>
-        <p className="text-xs text-gray-400 font-medium">Paridade entre o volume de dados dos períodos A e B</p>
-      </div>
-      <div className="text-right">
-        <span className="text-3xl font-black text-brand-purple">
-          {(data.balanceAnalysis.ratio * 100).toFixed(0)}%
-        </span>
-        <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Ratio de Paridade</p>
-      </div>
-    </div>
-
-    {/* Barra de Progresso Visual */}
-    <div className="relative h-4 w-full bg-gray-100 rounded-full overflow-hidden">
-      <div 
-        className="absolute top-0 left-0 h-full bg-brand-purple transition-all duration-1000 ease-out rounded-full"
-        style={{ width: `${(data.balanceAnalysis.ratio * 100)}%` }}
-      />
-    </div>
-
-    {/* Detalhes de Registros */}
-    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-50">
-      <div className="text-center">
-        <p className="text-[10px] font-bold text-gray-400 uppercase">Série A</p>
-        <p className="text-sm font-black text-gray-700">{data.balanceAnalysis.recordsA} regs</p>
-      </div>
-      <div className="w-[1px] h-8 bg-gray-100 mx-auto" />
-      <div className="text-center">
-        <p className="text-[10px] font-bold text-gray-400 uppercase">Série B</p>
-        <p className="text-sm font-black text-gray-700">{data.balanceAnalysis.recordsB} regs</p>
-      </div>
-    </div>
-  </div>
-
-  {/* Card de Nível de Confiabilidade */}
-  <div className={`p-8 rounded-[2.5rem] flex flex-col justify-between shadow-lg transition-all ${
-    data.balanceAnalysis.reliability === 'alta' ? 'bg-green-600 text-white shadow-green-200' :
-    data.balanceAnalysis.reliability === 'limitada' ? 'bg-amber-500 text-white shadow-amber-200' :
-    'bg-red-500 text-white shadow-red-200'
-  }`}>
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <LuShieldCheck size={24} />
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Status Técnico</span>
-      </div>
-      <h3 className="text-2xl font-black capitalize">Confiabilidade {data.balanceAnalysis.reliability}</h3>
-      <p className="text-sm font-medium opacity-90 leading-relaxed">
-        {data.balanceAnalysis.reliability === 'alta' 
-          ? "Os volumes de dados são equivalentes, permitindo uma análise estatística robusta." 
-          : `O desequilíbrio ${data.balanceAnalysis.imbalanceLevel} de amostras pode influenciar as médias.`}
-      </p>
-    </div>
-
-    <div className="pt-6 border-t border-white/20">
-      <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Nível de Imbalanço</span>
-      <p className="text-lg font-bold uppercase italic">{data.balanceAnalysis.imbalanceLevel}</p>
-    </div>
-  </div>
-</section>
-        </>
+        </div>
       )}
     </div>
   );

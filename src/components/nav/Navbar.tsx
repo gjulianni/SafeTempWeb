@@ -60,11 +60,10 @@ const Navbar = () => {
  const handleMarkAsRead = async () => {
   try {
  
-    await api.patch('notifications/read');
+    const response = await api.patch('/notifications/read');
+    console.log('Status:', response.status); 
 
-    setNotifications(prevNotifications => 
-      prevNotifications.map(n => ({ ...n, read: true }))
-    );
+    setNotifications([]);
 
   } catch (error) {
     console.error("Erro ao marcar notificações como lidas:", error);

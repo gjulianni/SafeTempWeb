@@ -53,7 +53,7 @@ export interface ComparisonResponse {
     recordsB: number;
     ratio: number;
     imbalanceLevel: string;
-    reliability: 'baixa' | 'media' | 'alta';
+    reliability: 'baixa' | 'media' | 'boa';
   };
   summary: {
     headline: string;

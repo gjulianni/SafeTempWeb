@@ -14,7 +14,7 @@ type ComparisonHookResult = ComparisonResponse & {
   seriesB: HistoryPoint[];
 };
 
-export function useComparison({ rangeA, rangeB, granularity = '10m' }: UseComparisonParams) {
+export function useComparison({ rangeA, rangeB, granularity }: UseComparisonParams) {
   return useQuery<ComparisonHookResult>({
     queryKey: ['use-comparison', rangeA, rangeB, granularity],
     queryFn: async () => {

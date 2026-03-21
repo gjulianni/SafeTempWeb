@@ -1,11 +1,15 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useComparison } from "../../hooks/useComparison";
-import { LuActivity, LuArrowDownRight, LuArrowRightLeft, LuArrowUpRight, LuCalendar, LuInfo, LuRefreshCw, LuSettings2, LuShieldAlert, LuShieldCheck, LuShieldOff, LuSparkles, LuThermometer } from "react-icons/lu";
+import { LuActivity, LuArrowDownRight, LuArrowRightLeft, LuArrowUpRight, LuCalendar, LuDownload, LuFileText, LuInfo, LuRefreshCw, LuSettings2, LuShieldAlert, LuShieldCheck, LuShieldOff, LuSparkles, LuThermometer } from "react-icons/lu";
 import Navbar from "../../components/nav/Navbar";
 import { formatTimeBRT } from "../../utils/formatters/formatTimeBRT";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { motion } from "framer-motion";
 import ComparisonSummaryCard from "../../components/comparison/ComparisonSummaryCard";
+import { buildExportRows, isDown, tableGroups } from "./helpers/tableGroups";
+import { exportToJSON } from "../../utils/functions/exportToJSON";
+import { exportToCSV } from "../../utils/functions/exportToCSV";
+import { LuTable2, LuChartBar } from 'react-icons/lu';
 
 export interface HistoryPoint {
   timestamp: string;   // ISO string
@@ -22,12 +26,12 @@ const ComparisonPage = () => {
   const [dateA, setDateA] = useState("");
   const [dateB, setDateB] = useState("");
   const [granularity, setGranularity] = useState('10m');
-
+  const [activeTab, setActiveTab] = useState<'table' | 'charts'>('table');
 
  const { data, isLoading, isError, refetch } = useComparison({ 
     rangeA: dateA, 
     rangeB: dateB,
-    granularity: '10m'
+    granularity,
   });
 
   const seriesA = data?.seriesA || [];
@@ -49,16 +53,22 @@ const ComparisonPage = () => {
 
 
 const handleUpdate = () => {
-    if (dateA && dateB) refetch();
-  };
+  if (dateA && dateB) refetch();
+};
+
+useEffect(() => {
+  if (dateA && dateB) refetch();
+}, [granularity]);
+
 
   const getReliabilityStyles = (reliability: string) => {
   switch (reliability) {
-    case 'alta':
+    case 'boa':
       return { 
         color: 'text-green-600', 
         border: 'border-green-500', 
         bg: 'bg-green-50', 
+        progressBar: 'bg-green-500',
         icon: <LuShieldCheck size={18} />, 
         label: 'Dados Confiáveis' 
       };
@@ -67,6 +77,7 @@ const handleUpdate = () => {
         color: 'text-amber-600', 
         border: 'border-amber-500', 
         bg: 'bg-amber-50', 
+        progressBar: 'bg-amber-500',
         icon: <LuShieldAlert size={18} />, 
         label: 'Confiabilidade Limitada' 
       };
@@ -75,6 +86,7 @@ const handleUpdate = () => {
         color: 'text-red-600', 
         border: 'border-red-500', 
         bg: 'bg-red-50', 
+        progressBar: 'bg-red-500',  
         icon: <LuShieldOff size={18} />, 
         label: 'Atenção: Baixa Confiabilidade' 
       };
@@ -83,6 +95,7 @@ const handleUpdate = () => {
         color: 'text-slate-500', 
         bg: 'bg-slate-50', 
         border: 'border-slate-200',
+        progressBar: 'bg-slate-400',
         icon: <LuInfo size={18} />, 
         label: 'Análise de Equilíbrio' 
       };
@@ -95,15 +108,8 @@ const handleUpdate = () => {
 
 <section className="w-full mt-30 bg-white overflow-hidden p-8 lg:p-12 relative">
       
-      {/* ESTA DIV É A CHAVE: 
-          1. max-w-6xl ou 7xl define o limite máximo de onde o conteúdo pode se espalhar.
-          2. mx-auto centraliza esse bloco no meio da section w-full.
-          3. justify-center traz os dois lados para o centro.
-          4. gap-24 (ou o valor que você preferir) define a distância exata entre o texto e o card.
-      */}
       <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-64 mb-8">
         
-        {/* Lado Esquerdo: Introdução */}
         <div className="flex-1 max-w-xl text-center lg:text-left z-10">
           <motion.div 
             initial={{ opacity: 0, x: -20 }} 
@@ -124,17 +130,15 @@ const handleUpdate = () => {
           </p>
         </div>
 
-        {/* Lado Direito: O Card de Tendências */}
       <div className="flex-1 relative w-full max-w-[580px] h-[340px] z-10">
   <motion.div
     initial={{ opacity: 0, scale: 0.9, y: 20 }}
     animate={{ opacity: 1, scale: 1, y: 0 }}
-    className="p-8 rounded-[3.5rem] text-white shadow-[0_35px_60px_-15px_rgba(106,17,203,0.4)] w-full h-full bg-gradient-to-br from-brand-purple via-purple-600 to-purple-800 border border-white/20 flex flex-col justify-between overflow-hidden relative"
+    className="p-8 rounded-[1.5rem] text-white shadow-[0_35px_60px_-15px_rgba(106,17,203,0.4)] w-full h-full bg-gradient-to-br from-brand-purple via-purple-600 to-purple-800 border border-white/20 flex flex-col justify-between overflow-hidden relative"
   >
-    {/* Glow decorativo de fundo */}
+  
     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/5 rounded-full blur-3xl pointer-events-none" />
 
-    {/* Header do Card */}
     <div className="flex items-center justify-between relative z-10">
       <div className="flex items-center gap-3">
         <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/10 shadow-inner">
@@ -148,13 +152,10 @@ const handleUpdate = () => {
       <div className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">SafeTemp v3.0</div>
     </div>
 
-    {/* Área de Conteúdo Central (Gráfico + Tabela Lado a Lado) */}
     <div className="flex items-center gap-8 py-4 relative z-10">
       
-      {/* 1. Lado Esquerdo: Animação SVG das Linhas */}
       <div className="flex-1">
         <svg viewBox="0 0 100 50" className="w-full h-24 drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
-          {/* Série A: Sólida */}
           <motion.path
             d="M0 35 Q 20 10, 40 25 T 80 15 T 100 5"
             fill="none"
@@ -165,7 +166,6 @@ const handleUpdate = () => {
             animate={{ pathLength: 1 }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
           />
-          {/* Série B: Tracejada */}
           <motion.path
             d="M0 20 Q 30 40, 50 20 T 80 30 T 100 10"
             fill="none"
@@ -180,7 +180,6 @@ const handleUpdate = () => {
         </svg>
       </div>
 
-      {/* 2. Lado Direito: Mini Tabela Comparativa (Estilo Log) */}
       <div className="w-[200px] shrink-0 font-mono text-[10px] bg-black/20 backdrop-blur-lg p-4 rounded-3xl border border-white/10 shadow-2xl">
         <div className="flex justify-between text-white/30 border-b border-white/5 pb-2 mb-2 font-black uppercase tracking-tighter">
           <span>Métrica</span>
@@ -218,11 +217,10 @@ const handleUpdate = () => {
       </div>
     </div>
 
-    {/* Footer do Card */}
     <div className="flex items-center justify-between pt-4 border-t border-white/10 relative z-10">
       <div className="flex items-center gap-2 text-[9px] font-black uppercase text-purple-200/60 tracking-tighter">
         <LuSparkles size={12} className="animate-pulse" /> 
-        AI Statistical Engine Active
+        SafeTemp Engine
       </div>
       <div className="flex gap-1">
         <div className="w-1.5 h-1.5 rounded-full bg-white/40" />
@@ -234,10 +232,8 @@ const handleUpdate = () => {
 </div>
       </div>
 
-      {/* 2. Parte Inferior: Barra de Seleção de Datas */}
       <div className="bg-gray-50/50 p-6 rounded-[0.5rem] border border-gray-100 flex flex-col lg:flex-row gap-6 items-end">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-          {/* Seletor Série A */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Período de Referência (A)</label>
             <div className="relative flex items-center">
@@ -251,7 +247,6 @@ const handleUpdate = () => {
             </div>
           </div>
 
-          {/* Seletor Série B */}
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-2">Período de Comparação (B)</label>
             <div className="relative flex items-center">
@@ -288,19 +283,14 @@ const handleUpdate = () => {
           <p className="text-xs opacity-70">Certifique-se de que ambos os períodos possuem dados registrados.</p>
         </div>
       ) : !data ? (
-        // Estado Inicial (Placeholder)
         <div className="p-20 text-center bg-white rounded-[2rem] border-2 border-dashed border-gray-100">
           <LuCalendar size={48} className="mx-auto text-gray-200 mb-4" />
           <h3 className="text-xl font-bold text-gray-300">Escolha as datas acima para iniciar a análise.</h3>
         </div>
           ) : (
-            // RESULTADOS (Só renderiza se 'data' existir e não houver erro)
             <div className="space-y-8 animate-in fade-in duration-700">
-              {/* Gráficos */}
 <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-  {/* CARD GRÁFICO - SÉRIE A */}
   <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50 flex flex-col">
-    {/* Header: Título + Data Badge */}
     <div className="flex justify-between items-center mb-8">
       <div className="space-y-1">
         <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Tendência Série A</h3>
@@ -344,14 +334,13 @@ const handleUpdate = () => {
       </ResponsiveContainer>
     </div>
 
-    {/* Footer: Seletor de Drill-down */}
     <div className="mt-8 pt-6 border-t border-gray-50 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <LuSettings2 size={14} className="text-gray-300" />
         <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Drill-down</span>
       </div>
       <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
-        {['1m', '5m', '10m', '30m', '1h'].map((opt) => (
+        {['1m', '5m', '10m', '15m', '30m', '1h'].map((opt) => (
           <button
             key={opt}
             onClick={() => setGranularity(opt)}
@@ -368,7 +357,6 @@ const handleUpdate = () => {
     </div>
   </div>
 
-  {/* CARD GRÁFICO - SÉRIE B (Repita a estrutura, mudando as cores e as variáveis para B) */}
   <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-50 flex flex-col">
     <div className="flex justify-between items-center mb-8">
       <div className="space-y-1">
@@ -414,7 +402,7 @@ const handleUpdate = () => {
         <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Drill-down</span>
       </div>
       <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
-        {['1m', '5m', '10m', '30m', '1h'].map((opt) => (
+        {['1m', '5m', '10m', '15m', '30m', '1h'].map((opt) => (
           <button
             key={opt}
             onClick={() => setGranularity(opt)}
@@ -434,222 +422,288 @@ const handleUpdate = () => {
 
           {/* Cards de Paridade */}
 
-<section className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-  
-  {/* 1. Lado Esquerdo: Equilíbrio de Amostragem (Releitura do anterior para o novo layout) */}
+<section className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+  {/* SUMÁRIO DA IA — ocupa 2/3 da largura */}
+  <div className="lg:col-span-2">
+    <ComparisonSummaryCard summary={data.summary} 
+      statisticsA={data.rangeA.statistics}
+  statisticsB={data.rangeB.statistics}
+  metrics={data.comparison.metrics}
+    />
+  </div>
+
+  {/* EQUILÍBRIO DE AMOSTRAGEM — ocupa 1/3 da largura */}
   {(() => {
     const reliabilityConfig = getReliabilityStyles(data.balanceAnalysis.reliability);
-    const ratioPercent = (data.balanceAnalysis.ratio * 100).toFixed(0);
+    const ratioPercent = (data.balanceAnalysis.ratio * 100).toFixed(1);
 
     return (
-      <div className={`bg-white p-8 rounded-[2.5rem] border-t-8 ${reliabilityConfig.border} shadow-xl shadow-slate-200/40 flex flex-col justify-between`}>
-        <div>
-          <div className="flex justify-between items-center mb-8">
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-xl ${reliabilityConfig.bg} ${reliabilityConfig.color}`}>
-              {reliabilityConfig.icon}
-              <span className="text-[10px] font-black uppercase tracking-widest">{reliabilityConfig.label}</span>
-            </div>
-            <span className="text-2xl font-black text-slate-800">{ratioPercent}%</span>
-          </div>
+      <div className={`bg-white p-8 rounded-[2.5rem] border-t-8 ${reliabilityConfig.border} shadow-xl shadow-slate-200/40`}>
 
-          <h3 className="text-xl font-black text-slate-800 mb-4">Equilíbrio de Amostragem</h3>
-          
-          <div className="relative h-2.5 w-full bg-slate-100 rounded-full overflow-hidden mb-8">
-            <motion.div 
-              initial={{ width: 0 }}
-              animate={{ width: `${ratioPercent}%` }}
-              className={`absolute top-0 left-0 h-full ${reliabilityConfig.color.replace('text', 'bg')}`}
-            />
+        {/* Badge + percentual */}
+        <div className="flex justify-between items-center mb-6">
+          <div className={`flex items-center gap-2 px-3 py-1 rounded-xl ${reliabilityConfig.bg} ${reliabilityConfig.color}`}>
+            {reliabilityConfig.icon}
+            <span className="text-[10px] font-black uppercase tracking-widest">{reliabilityConfig.label}</span>
           </div>
+          <span className="text-2xl font-black text-slate-800">{ratioPercent}%</span>
+        </div>
 
-          {/* Versão compacta da grid de detalhes para caber no 50/50 */}
-          <div className="space-y-4 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Série A (Ref)</span>
-              <span className="text-sm font-black text-slate-700">{data.rangeA.totalRecords} regs</span>
+        {/* Título */}
+        <h3 className="text-xl font-black text-slate-800 mb-4">Equilíbrio de Amostragem</h3>
+
+        {/* Barra de progresso */}
+        <div className="relative h-2.5 w-full bg-slate-100 rounded-full overflow-hidden mb-8">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${ratioPercent}%` }}
+            className={`absolute top-0 left-0 h-full ${reliabilityConfig.progressBar}`}
+          />
+        </div>
+
+        {/* Registros */}
+        <div className="space-y-4 p-5 bg-slate-50/50 rounded-2xl border border-slate-100 mb-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-brand-purple shrink-0" />
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Série A (Ref)</span>
             </div>
-            <div className="h-[1px] bg-slate-200 w-full" />
-            <div className="flex justify-between items-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase">Série B (Comp)</span>
-              <span className="text-sm font-black text-slate-700">{data.rangeB.totalRecords} regs</span>
+            <span className="text-sm font-black text-slate-700">{data.rangeA.totalRecords} regs</span>
+          </div>
+          <div className="h-[1px] bg-slate-200 w-full" />
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-brand-orange shrink-0" />
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Série B (Comp)</span>
             </div>
+            <span className="text-sm font-black text-slate-700">{data.rangeB.totalRecords} regs</span>
           </div>
         </div>
 
-        <div className="mt-8 flex items-start gap-3 p-4 bg-brand-orange/5 rounded-2xl border border-dashed border-brand-orange/20">
-          <LuShieldAlert className="text-brand-orange mt-1 shrink-0" size={16} />
+        {/* Aviso de desbalanceamento */}
+        <div className="flex items-start gap-3 p-4 bg-brand-orange/5 rounded-2xl border border-dashed border-brand-orange/20">
+          <LuShieldAlert className="text-brand-orange mt-0.5 shrink-0" size={16} />
           <p className="text-[11px] text-slate-500 font-medium leading-relaxed italic">
             O desbalanceamento {data.balanceAnalysis.imbalanceLevel} pode influenciar a percepção de estabilidade entre os períodos.
           </p>
         </div>
+
       </div>
     );
   })()}
 
-  {/* 2. Lado Direito: Sumário da IA */}
-  <ComparisonSummaryCard summary={data.summary} />
-
 </section>
-
-          {/* Grupos de Estatísticas */}
                
-<section className="bg-white p-10 rounded-[2.5rem] shadow-sm border border-gray-50 space-y-12">
-  <div className="space-y-2">
-    <h3 className="text-2xl font-black text-gray-800">Detalhamento Estatístico</h3>
-    <p className="text-sm text-gray-400 font-medium">Análise comparativa agrupada por indicadores técnicos</p>
-  </div>
+{/* Grupos de Estatísticas */}
+{(() => {
 
-  {/* GRUPO 1: Tendência Central (Média e Mediana) */}
-  <div className="space-y-4">
-    <h4 className="text-[10px] font-black uppercase text-brand-purple tracking-[0.2em] ml-4">Tendência Central</h4>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <MetricComparisonCard 
-        label="Média Térmica" 
-        valA={data.rangeA.statistics.media} 
-        valB={data.rangeB.statistics.media} 
-        diff={data.comparison.metrics.media.absolute} 
-        percent={data.comparison.metrics.media.percentage} 
-        icon={<LuThermometer />}
-      />
-      <MetricComparisonCard 
-        label="Mediana" 
-        valA={data.rangeA.statistics.mediana} 
-        valB={data.rangeB.statistics.mediana} 
-        diff={data.comparison.metrics.mediana.absolute} 
-        percent={data.comparison.metrics.mediana.percentage} 
-        icon={<LuThermometer className="rotate-90" />}
-      />
-    </div>
-  </div>
-
-  {/* GRUPO 2: Dispersão e Variabilidade (Variância e Desvio Padrão) */}
-  <div className="space-y-4">
-    <h4 className="text-[10px] font-black uppercase text-brand-purple tracking-[0.2em] ml-4">Dispersão e Variabilidade</h4>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <MetricComparisonCard 
-        label="Variância" 
-        valA={data.rangeA.statistics.variancia} 
-        valB={data.rangeB.statistics.variancia} 
-        diff={data.comparison.metrics.variancia.absolute} 
-        percent={data.comparison.metrics.variancia.percentage} 
-        icon={<LuActivity />}
-        isInverse
-      />
-      <MetricComparisonCard 
-        label="Desvio Padrão" 
-        valA={data.rangeA.statistics.desvioPadrao} 
-        valB={data.rangeB.statistics.desvioPadrao} 
-        diff={data.comparison.metrics.desvioPadrao.absolute} 
-        percent={data.comparison.metrics.desvioPadrao.percentage} 
-        icon={<LuActivity />}
-        isInverse
-      />
-    </div>
-  </div>
-
-  {/* GRUPO 3: Estabilidade Relativa (CV com e sem Outliers) */}
-  <div className="space-y-4">
-    <h4 className="text-[10px] font-black uppercase text-brand-purple tracking-[0.2em] ml-4">Estabilidade de Amostragem</h4>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <MetricComparisonCard 
-        label="CV (Com Outliers)" 
-        valA={data.rangeA.statistics.CVOutlier} 
-        valB={data.rangeB.statistics.CVOutlier} 
-        diff={data.comparison.metrics.CVOutlier.absolute} 
-        percent={data.comparison.metrics.CVOutlier.percentage} 
-        icon={<LuActivity />}
-        isInverse
-      />
-      <MetricComparisonCard 
-        label="CV (Sem Outliers)" 
-        valA={data.rangeA.statistics.CVNoOutlier} 
-        valB={data.rangeB.statistics.CVNoOutlier} 
-        diff={data.comparison.metrics.CVNoOutlier.absolute} 
-        percent={data.comparison.metrics.CVNoOutlier.percentage} 
-        icon={<LuActivity />}
-        isInverse
-      />
-    </div>
-  </div>
-
-  {/* GRUPO 4: Extremos e Anomalias (Min, Max, Outliers) */}
-  <div className="space-y-4">
-    <h4 className="text-[10px] font-black uppercase text-brand-purple tracking-[0.2em] ml-4">Extremos e Anomalias</h4>
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {/* Amplitude: Diferença entre Max e Min */}
-      <MetricComparisonCard 
-        label="Amplitude Total" 
-        valA={data.rangeA.statistics.max - data.rangeA.statistics.min} 
-        valB={data.rangeB.statistics.max - data.rangeB.statistics.min} 
-        diff={data.comparison.metrics.amplitude.absolute} 
-        percent={data.comparison.metrics.amplitude.percentage} 
-        icon={<LuActivity />}
-        isInverse
-      />
-      
-      {/* Total de Outliers: Diferença absoluta entre os dois períodos */}
-      <MetricComparisonCard 
-        label="Frequência de Outliers" 
-        valA={data.rangeA.statistics.totalOutliers} 
-        valB={data.rangeB.statistics.totalOutliers} 
-        diff={data.rangeB.statistics.totalOutliers - data.rangeA.statistics.totalOutliers} 
-        percent={(((data.rangeB.statistics.totalOutliers - data.rangeA.statistics.totalOutliers) / (data.rangeA.statistics.totalOutliers || 1)) * 100)} 
-        icon={<LuShieldAlert />}
-        isInverse
-      />
-
-      {/* Sugestão Extra: Máxima Registrada */}
-      <MetricComparisonCard 
-        label="Pico Térmico (Máx)" 
-        valA={data.rangeA.statistics.max} 
-        valB={data.rangeB.statistics.max} 
-        diff={data.rangeB.statistics.max - data.rangeA.statistics.max} 
-        percent={((data.rangeB.statistics.max - data.rangeA.statistics.max) / data.rangeA.statistics.max) * 100} 
-        icon={<LuActivity className="text-orange-500" />}
-        isInverse
-      />
-    </div>
-  </div>
-</section>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const MetricComparisonCard = ({ label, valA, valB, diff, percent, icon, isInverse = false }: any) => {
-  const isPositive = diff > 0;
-  const isBetter = isInverse ? !isPositive : isPositive;
-  const color = isBetter ? "text-green-500" : "text-red-500";
-
-  const format = (val: number | string | null | undefined) => {
-    const num = Number(val);
-    return isNaN(num) ? "0.00" : num.toFixed(2);
-  };
+  const chartGroups = [
+    {
+      label: 'Tendência Central',
+      rows: [
+        { label: 'Média Térmica',   valA: data.rangeA.statistics.media,       valB: data.rangeB.statistics.media },
+        { label: 'Mediana',         valA: data.rangeA.statistics.mediana,     valB: data.rangeB.statistics.mediana },
+      ],
+    },
+    {
+      label: 'Dispersão e Variabilidade',
+      rows: [
+        { label: 'Variância',       valA: data.rangeA.statistics.variancia,    valB: data.rangeB.statistics.variancia },
+        { label: 'Desvio Padrão',   valA: data.rangeA.statistics.desvioPadrao, valB: data.rangeB.statistics.desvioPadrao },
+        { label: 'CV com Outliers', valA: data.rangeA.statistics.CVOutlier,    valB: data.rangeB.statistics.CVOutlier },
+        { label: 'CV sem Outliers', valA: data.rangeA.statistics.CVNoOutlier,  valB: data.rangeB.statistics.CVNoOutlier },
+      ],
+    },
+    {
+      label: 'Extremos e Anomalias',
+      rows: [
+        { label: 'Amplitude Total', valA: data.rangeA.statistics.max - data.rangeA.statistics.min, valB: data.rangeB.statistics.max - data.rangeB.statistics.min },
+        { label: 'Pico Térmico',    valA: data.rangeA.statistics.max,          valB: data.rangeB.statistics.max },
+      ],
+    },
+  ];
 
   return (
-    <div className="p-6 bg-gray-50 rounded-[2rem] border border-transparent hover:border-gray-100 transition-all group">
-      <div className="flex justify-between items-start mb-4">
-        <div className="p-2 bg-white rounded-xl text-brand-purple shadow-sm">{icon}</div>
-        <div className={`flex items-center gap-1 text-[10px] font-black uppercase ${color}`}>
-          {isPositive ? <LuArrowUpRight /> : <LuArrowDownRight />}
-          {format(percent)}%
+    <section className="bg-white rounded-[2.5rem] shadow-sm border border-gray-50 overflow-hidden">
+
+      {/* Header */}
+      <div className="flex justify-between items-end px-10 pt-10 pb-0 border-b border-gray-50">
+        <div className="space-y-1 pb-5">
+          <h3 className="text-2xl font-black text-gray-800">Detalhamento Estatístico</h3>
+          <p className="text-sm text-gray-400 font-medium">Análise comparativa agrupada por indicadores técnicos</p>
+        </div>
+        <div className="flex items-center gap-3 pb-5">
+          <button
+            onClick={() => exportToCSV(buildExportRows(data) as any, `SafeTemp_Comparacao_${dateA}_vs_${dateB}`)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-500 text-[11px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all cursor-pointer"
+          >
+            <LuDownload size={13} /> CSV
+          </button>
+          <button
+            onClick={() => exportToJSON(buildExportRows(data) as any, `SafeTemp_Comparacao_${dateA}_vs_${dateB}`)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-purple text-white text-[11px] font-black uppercase tracking-widest hover:opacity-90 transition-all cursor-pointer"
+          >
+            <LuFileText size={13} /> JSON
+          </button>
         </div>
       </div>
-      
-      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
-      
-      <div className="flex items-baseline gap-4 mt-2">
-        <div className="flex flex-col">
-          <span className="text-2xl font-black text-gray-800">{format(valB)}°</span>
-          <span className="text-[9px] font-bold text-gray-300 uppercase">Série B</span>
-        </div>
-        <div className="h-8 w-[1px] bg-gray-200 mx-2" />
-        <div className="flex flex-col">
-          <span className="text-lg font-bold text-gray-400 line-through decoration-gray-200">{format(valA)}°</span>
-          <span className="text-[9px] font-bold text-gray-300 uppercase">Série A</span>
-        </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 px-10 border-b border-gray-100">
+        {([
+          { key: 'table',  label: 'Tabela',       icon: <LuTable2 size={14} /> },
+          { key: 'charts', label: 'Visualização',  icon: <LuChartBar size={14} /> },
+        ] as const).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest border-b-2 -mb-px transition-all cursor-pointer ${
+              activeTab === tab.key
+                ? 'text-brand-purple border-brand-purple'
+                : 'text-gray-400 border-transparent hover:text-gray-600'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
       </div>
+
+      {/* Tab: Tabela */}
+      {activeTab === 'table' && (
+        <table className="w-full border-collapse">
+          <thead>
+            <tr>
+              <th className="text-left text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 px-10 py-4 border-b border-gray-50">Métrica</th>
+              <th className="text-right text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 px-10 py-4 border-b border-gray-50">Série B</th>
+              <th className="text-right text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 px-10 py-4 border-b border-gray-50">Série A</th>
+              <th className="text-right text-[10px] font-black uppercase tracking-[0.12em] text-gray-400 px-10 py-4 border-b border-gray-50">Variação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tableGroups(data).map((group) => (
+              <>
+                <tr key={group.label}>
+                  <td colSpan={4} className="text-[9px] font-black uppercase tracking-[0.16em] text-brand-purple bg-brand-purple/[0.03] px-10 py-2.5 border-t border-brand-purple/10">
+                    {group.label}
+                  </td>
+                </tr>
+                {group.rows.map((row) => {
+                  const isPositive = row.diff > 0;
+                  const isBetter = row.isInverse ? isDown(row.diff) : !isDown(row.diff);
+                  const isNeutral = row.diff === 0;
+                  return (
+                    <tr key={row.label} className="border-t border-gray-50 hover:bg-gray-50/60 transition-colors group">
+                      <td className="px-10 py-4 text-sm font-medium text-gray-500 group-hover:text-gray-700 transition-colors">{row.label}</td>
+                      <td className="px-10 py-4 text-right text-sm font-black text-gray-800 tabular-nums">{row.valB}</td>
+                      <td className="px-10 py-4 text-right text-sm font-medium text-gray-300 line-through decoration-gray-200 tabular-nums">{row.valA}</td>
+                      <td className="px-10 py-4 text-right">
+                        {isNeutral ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-gray-400 bg-gray-100 rounded-md px-2.5 py-1">— 0%</span>
+                        ) : isBetter ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-green-600 bg-green-50 rounded-md px-2.5 py-1">
+                            <LuArrowUpRight size={12} />{Math.abs(row.percent).toFixed(1)}%
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-black text-red-500 bg-red-50 rounded-md px-2.5 py-1">
+                            <LuArrowDownRight size={12} />{Math.abs(row.percent).toFixed(1)}%
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {/* Tab: Visualização */}
+      {activeTab === 'charts' && (
+        <div className="px-10 py-8 space-y-10">
+          {chartGroups.map((group, gi) => (
+            <div key={group.label} className="space-y-5">
+              <h4 className="text-[9px] font-black uppercase tracking-[0.16em] text-brand-purple">
+                {group.label}
+              </h4>
+              <div className="space-y-4">
+                {group.rows.map((row) => {
+                  const maxVal = Math.max(row.valA, row.valB);
+                  const pctA = (row.valA / maxVal) * 100;
+                  const pctB = (row.valB / maxVal) * 100;
+                  return (
+                    <div key={row.label} className="flex items-center gap-6">
+                      {/* Label */}
+                      <span className="w-36 shrink-0 text-right text-[11px] font-medium text-gray-500">
+                        {row.label}
+                      </span>
+                      {/* Barras */}
+                      <div className="flex-1 space-y-1.5">
+                        {/* Série A */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full bg-brand-purple shrink-0" />
+                          <div className="flex-1 h-2.5 bg-gray-50 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pctA}%` }}
+                              transition={{ duration: 0.6, ease: 'easeOut' }}
+                              className="h-full rounded-full bg-brand-purple/30"
+                            />
+                          </div>
+                          <span className="text-[11px] font-black text-gray-500 tabular-nums w-14 text-right">
+                            {row.valA.toFixed(2)}°
+                          </span>
+                        </div>
+                        {/* Série B */}
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 rounded-full bg-brand-orange shrink-0" />
+                          <div className="flex-1 h-2.5 bg-gray-50 rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${pctB}%` }}
+                              transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+                              className="h-full rounded-full bg-brand-orange/40"
+                            />
+                          </div>
+                          <span className="text-[11px] font-black text-gray-800 tabular-nums w-14 text-right">
+                            {row.valB.toFixed(2)}°
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {gi < chartGroups.length - 1 && (
+                <div className="h-px bg-gray-100 mt-2" />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between px-10 py-5 border-t border-gray-50 bg-gray-50/40">
+        <div className="flex items-center gap-6 text-[11px] text-gray-400 font-medium">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-brand-purple" />
+            Série A — período de referência ({dateA})
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-brand-orange" />
+            Série B — período de comparação ({dateB})
+          </div>
+        </div>
+        <span className="text-[11px] text-gray-300 font-medium">10 métricas · valores em °C</span>
+      </div>
+
+    </section>
+  );
+})()}
+        </div>
+      )}
     </div>
   );
 };

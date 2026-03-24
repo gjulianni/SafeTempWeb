@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import api from '../../services/api'; 
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -57,13 +57,21 @@ const ReportsPage: React.FC = () => {
     }
   };
 
+  const searchAbortRef = useRef<AbortController | null>(null);
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+     if (searchAbortRef.current) {
+    searchAbortRef.current.abort();
+  }
+  searchAbortRef.current = new AbortController();
+
+  setLoading(true);
     try {
-      const response = await api.get(`reports/interval`, { params: searchDates });
+      const response = await api.get(`reports/interval`, { params: searchDates, signal: searchAbortRef.current.signal });
       setReports(response.data);
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'CanceledError' || err.code === 'ERR_CANCELED') return;
       console.error("Erro na busca:", err);
     } finally {
       setLoading(false);
@@ -177,29 +185,34 @@ const handleShare = async (id: number) => {
                 onChange={(e) => setSearchDates({...searchDates, inicio: e.target.value})}
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Fim</label>
-              <input 
-                type="date" 
-                className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-brand-purple transition-all"
-                onChange={(e) => setSearchDates({...searchDates, fim: e.target.value})}
-              />
-            </div>
-          </div>
-          
-          <button type="submit" className="w-full py-3.5 cursor-pointer bg-brand-purple text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all">
-            <LuSearch size={16} /> Pesquisar
-          </button>
-        </form>
-      </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-gray-400 ml-1">Fim</label>
+                    <input
+                      type="date"
+                      className="w-full p-2.5 bg-white border border-gray-200 rounded-xl text-xs font-bold outline-none focus:border-brand-purple transition-all"
+                      onChange={(e) => setSearchDates({ ...searchDates, fim: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-        <div className="max-h-[400px] xl:max-h-[500px] overflow-y-auto p-4 space-y-3 custom-scrollbar">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-2">
-              {reports.length} Resultados encontrados
-            </p>
-            {loading ? (
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 bg-brand-purple text-white rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? <LuLoader size={16} className="animate-spin" /> : <LuSearch size={16} />}
+                  {loading ? 'Buscando...' : 'Pesquisar'}
+                </button>
+              </form>
+            </div>
+
+            <div className="max-h-[400px] xl:max-h-[500px] overflow-y-auto p-4 space-y-3 custom-scrollbar">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-2">
+                {reports.length} Resultados encontrados
+              </p>
+              {loading ? (
                 <div className="text-center py-10 font-bold text-gray-300 animate-pulse">Buscando...</div>
-            ) : (
+              ) : (
               reports.map((report) => (
                 <button
                   key={report.id}

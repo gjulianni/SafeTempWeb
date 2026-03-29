@@ -28,6 +28,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code2FA, setCode2FA] = useState('');
+  const [tempToken, setTempToken] = useState<string | null>(null);
   const [loadingCode, setLoadingCode] = useState(false);
   const [backupCode, setBackupCode] = useState('');
   const [loadingBackup, setLoadingBackup] = useState(false);
@@ -41,6 +42,7 @@ const Login = () => {
     try {
       const response = await authService.login({ email, password });
       if (response?.status === 206 || response?.data?.requires2FA) {
+        setTempToken(response.data.tempToken);
         setStep('2fa');
         return;
       }
@@ -79,7 +81,7 @@ const Login = () => {
     }
     setLoadingCode(true);
     try {
-      await api.post('2fa/verify-login-code', { token2FA: code2FA });
+      await api.post('2fa/verify-login-code', { token2FA: code2FA, ...(tempToken && { tempToken }) });
       toast.success('Login realizado com sucesso');
       await queryClient.invalidateQueries({ queryKey: ['authUser'] });
       navigate('/home');

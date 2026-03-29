@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
-import type { SystemLog } from "../types/logs";
+import type { SystemLog } from "../types/systemLogs";
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'error';
 

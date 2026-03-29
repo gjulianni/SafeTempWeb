@@ -5,7 +5,7 @@ import api from '../../services/api';
 import { commandGuide } from './systemLog/helpCommands';
 import { AxiosError } from 'axios';
 import type BackendErrorResponse from '../../types/axios';
-import type { SystemLog } from '../../types/logs';
+import type { SystemLog } from '../../types/systemLogs';
 
 const CHIP_ID = "10711434E3EC";
 

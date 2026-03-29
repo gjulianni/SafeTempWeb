@@ -46,6 +46,7 @@ const Login = () => {
         setStep('2fa');
         return;
       }
+      setInMemoryToken(response.data.accessToken);
       toast.success('Login realizado com sucesso');
       await queryClient.invalidateQueries({ queryKey: ['authUser'] });
       navigate('/home');

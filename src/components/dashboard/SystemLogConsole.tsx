@@ -23,6 +23,16 @@ const SystemLogConsole = () => {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const getCursorLeft = (text: string): number => {
+  const canvas = canvasRef.current || document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return 0;
+  ctx.font = '16px monospace'; // deve bater exatamente com o font-size e font-family do input
+  return ctx.measureText(text).width;
+};
+
   const statusConfig = {
     connecting: {
       color: 'text-zinc-600',
@@ -210,13 +220,14 @@ const SystemLogConsole = () => {
                   spellCheck="false"
                   autoComplete="off"
                 />
+                <canvas ref={canvasRef} className="hidden" />
                 <div 
                 className={`h-[2px] bg-white absolute pointer-events-none transition-all duration-75 
                     ${isFocused ? 'animate-terminal-cursor' : 'opacity-100'}`}
                   style={{
-                    left: `${commandInput.length * 6.2}px`, 
+                    left: `${getCursorLeft(commandInput)}px`, 
                     width: '8px',
-                    bottom: '4.4px'
+                    bottom: '4.2px'
                   }}
                 />
               </div>

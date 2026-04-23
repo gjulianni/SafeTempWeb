@@ -6,7 +6,8 @@ import {
   User, 
   Eye, 
   EyeOff, 
-  ArrowRight, 
+  ArrowRight,
+  CheckCircle2,
 } from 'lucide-react';
 import logost from '../../assets/logost.png';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +32,14 @@ const Register = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+
+
+  const passwordHasMinLength = password.length >= 8;
+  const passwordHasUpperCase = /[A-Z]/.test(password);
+  const passwordHasNumber = /[0-9]/.test(password);
+  const passwordStrengthScore = [passwordHasMinLength, passwordHasUpperCase, passwordHasNumber].filter(Boolean).length;
+  const passwordStrengthLabel = passwordStrengthScore === 3 ? 'Forte' : passwordStrengthScore === 2 ? 'Média' : 'Fraca';
+  const passwordStrengthColor = passwordStrengthScore === 3 ? 'bg-emerald-500' : passwordStrengthScore === 2 ? 'bg-amber-500' : 'bg-rose-500';
 
   const handleLoginClick = () => {
     navigate('/login');
@@ -72,6 +81,9 @@ const Register = () => {
     }
   };
 
+  const passwordMatch = password === confirmPassword;
+  const isSubmitDisabled = loading || !passwordMatch || !passwordHasMinLength || !passwordHasUpperCase || !passwordHasNumber || password.length === 0;
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50 font-sans">
       <div className="grid lg:grid-cols-2 min-h-screen">
@@ -81,20 +93,20 @@ const Register = () => {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="relative z-10 w-full max-w-md"
+            className="relative z-10 w-full max-w-xl lg:max-w-2xl"
           >
           <div className="mb-5 flex flex-col justify-center items-center">
-           <img src={logost} className='max-w-[70%] cursor-pointer hover:scale-103 transition-all duration-150' onClick={handleHomeClick} />
+           <img src={logost} className='max-w-[50%] cursor-pointer hover:scale-103 transition-all duration-150' onClick={handleHomeClick} />
             <p className="text-gray-600 mt-3 text-xs tracking-[0.3em] uppercase font-jakarta font-bold">
               Sistema de monitoramento
             </p>
           </div>
 
             <div className="bg-white rounded-[2.5rem] p-8 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.15)] border border-gray-100">
-              <h2 className="text-2xl font-black text-gray-900 mb-4 tracking-tight text-center">Cadastro</h2>
+             
               
-              <form className="space-y-5">
-                <div className="space-y-1.5">
+              <form onSubmit={handleRegister} className="grid gap-5 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-xs font-semibold uppercase tracking-wide text-gray-400 ml-1">
                     Nome Completo
                   </label>
@@ -110,7 +122,7 @@ const Register = () => {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 sm:col-span-2">
                   <label className="text-xs font-semibold uppercase tracking-wide text-gray-400 ml-1">
                     E-mail
                   </label>
@@ -148,6 +160,32 @@ const Register = () => {
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
+
+                  <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4 mt-4 text-sm text-gray-600">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="font-semibold text-gray-800">Força da senha</span>
+                      <span className={`text-xs font-bold uppercase tracking-[0.15em] ${passwordStrengthScore === 3 ? 'text-emerald-600' : passwordStrengthScore === 2 ? 'text-amber-600' : 'text-rose-600'}`}>
+                        {passwordStrengthLabel}
+                      </span>
+                    </div>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div className={`h-full rounded-full ${passwordStrengthColor} transition-all duration-300`} style={{ width: `${(passwordStrengthScore / 3) * 100}%` }} />
+                    </div>
+                    <div className="mt-4 grid gap-2 text-xs sm:grid-cols-3">
+                      <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${passwordHasMinLength ? 'bg-emerald-50 text-emerald-700' : 'bg-white text-gray-500 border border-gray-100'}`}>
+                        <CheckCircle2 className={`h-4 w-4 ${passwordHasMinLength ? 'text-emerald-500' : 'text-gray-300'}`} />
+                        Min. 8 caracteres
+                      </div>
+                      <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${passwordHasUpperCase ? 'bg-emerald-50 text-emerald-700' : 'bg-white text-gray-500 border border-gray-100'}`}>
+                        <CheckCircle2 className={`h-4 w-4 ${passwordHasUpperCase ? 'text-emerald-500' : 'text-gray-300'}`} />
+                        Uma letra maiúscula
+                      </div>
+                      <div className={`flex items-center gap-2 rounded-lg px-3 py-2 ${passwordHasNumber ? 'bg-emerald-50 text-emerald-700' : 'bg-white text-gray-500 border border-gray-100'}`}>
+                        <CheckCircle2 className={`h-4 w-4 ${passwordHasNumber ? 'text-emerald-500' : 'text-gray-300'}`} />
+                        Um número
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -173,34 +211,34 @@ const Register = () => {
                   </div>
                 </div>
 
-                <button 
-  onClick={handleRegister} 
-  disabled={loading} 
-  className={`w-full py-5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 uppercase text-xs font-bold tracking-wider mt-6
-    ${loading 
-      ? "bg-gray-400 cursor-not-allowed opacity-70" 
-      : "bg-brand-orange text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] shadow-brand-orange/30"
-    }`}
->
-  {loading ? (
-    <>
-      <LucideLoader2 className="animate-spin" size={20} />
-      Processando...
-    </>
-  ) : (
-    <>
-      Finalizar Cadastro
-      <LuArrowRight size={18} />
-    </>
-  )}
-</button>
+                <button
+                  type="submit"
+                  disabled={isSubmitDisabled}
+                  className={`w-full sm:col-span-2 py-5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 uppercase text-xs font-bold tracking-wider mt-2
+                    ${isSubmitDisabled
+                      ? 'bg-gray-300 cursor-not-allowed opacity-60'
+                      : 'bg-brand-orange text-white cursor-pointer hover:scale-[1.02] active:scale-[0.98] shadow-brand-orange/30'
+                    }`}
+                >
+                  {loading ? (
+                    <>
+                      <LucideLoader2 className="animate-spin" size={20} />
+                      Processando...
+                    </>
+                  ) : (
+                    <>
+                      Finalizar Cadastro
+                      <LuArrowRight size={18} />
+                    </>
+                  )}
+                </button>
               </form>
 
               <div className="relative my-8">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-100"></div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase font-semibold tracking-widest bg-white px-4 text-gray-300">
+                <div className="relative flex justify-center text-xs uppercase font-semibold tracking-widest bg-white px-4 text-gray-400">
                   Ou
                 </div>
               </div>

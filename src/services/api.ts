@@ -91,7 +91,7 @@ api.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError);
       setAuthState(false);
-      const publicRoutes = ['/login', '/register', '/recover', '/', '/home', '/dashboard', '/historico', '/historico/relatorios'];
+      const publicRoutes = ['/login', '/register', '/recover', '/recover/:token', '/', '/home', '/dashboard', '/historico', '/historico/relatorios', '/historico/comparar'];
       const isPublicRoute = publicRoutes.some(route =>
         window.location.pathname === route ||
         window.location.pathname.startsWith('/recover/')

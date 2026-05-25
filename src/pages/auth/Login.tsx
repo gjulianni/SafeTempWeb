@@ -7,7 +7,7 @@ import { authService } from '../../services/auth/authService';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
-import api from '../../services/api';
+import api, { setInMemoryToken } from '../../services/api';
 
 interface BackendErrorResponse {
   message?: string;
@@ -28,6 +28,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code2FA, setCode2FA] = useState('');
+  const [tempToken, setTempToken] = useState<string | null>(null);
   const [loadingCode, setLoadingCode] = useState(false);
   const [backupCode, setBackupCode] = useState('');
   const [loadingBackup, setLoadingBackup] = useState(false);
@@ -41,9 +42,11 @@ const Login = () => {
     try {
       const response = await authService.login({ email, password });
       if (response?.status === 206 || response?.data?.requires2FA) {
+        setTempToken(response.data.tempToken);
         setStep('2fa');
         return;
       }
+      setInMemoryToken(response.data.accessToken);
       toast.success('Login realizado com sucesso');
       await queryClient.invalidateQueries({ queryKey: ['authUser'] });
       navigate('/home');
@@ -79,7 +82,8 @@ const Login = () => {
     }
     setLoadingCode(true);
     try {
-      await api.post('2fa/verify-login-code', { token2FA: code2FA });
+      const response = await api.post('2fa/verify-login-code', { token2FA: code2FA, ...(tempToken && { tempToken }) });
+      setInMemoryToken(response.data.accessToken);
       toast.success('Login realizado com sucesso');
       await queryClient.invalidateQueries({ queryKey: ['authUser'] });
       navigate('/home');

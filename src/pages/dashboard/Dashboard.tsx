@@ -1,7 +1,7 @@
 import React from 'react';
 import Navbar from '../../components/nav/Navbar';
 import {
-  LuLightbulb, LuActivity, LuShieldCheck, LuThermometer,
+  LuActivity, LuShieldCheck, LuThermometer,
   LuSigma, LuDatabaseBackup, LuFileWarning, LuTarget, LuShieldAlert, 
 } from 'react-icons/lu';
 import {
@@ -19,6 +19,7 @@ import { exportToCSV } from '../../utils/functions/exportToCSV';
 import { exportToJSON } from '../../utils/functions/exportToJSON';
 import { AnimatePresence } from 'framer-motion';
 import { AIInsightCard } from '../../components/dashboard/AIInsightCard';
+import SystemLogConsole from '../../components/dashboard/SystemLogConsole';
 
 const Plot = createPlotlyComponent(Plotly);
 
@@ -36,8 +37,12 @@ const EmptyChartState = ({ title }: { title: string }) => (
 
 const Dashboard: React.FC = () => {
   const { data, isLoading, isError } = useHistory();
-  const [thresholds, setThresholds] = React.useState({ cold: 20, hot: 25 });
+  const [thresholds, setThresholds] = React.useState<{ cold: number | string; hot: number | string }>({
+  cold: 20,
+  hot: 25
+});
   const [currentInsight, setCurrentInsight] = React.useState<string | null>(null);
+  const [showConsole, setShowConsole] = React.useState(false);
 
   if (isLoading) return <div className="p-10 text-center font-bold">Carregando...</div>;
   if (isError || !data?.records) return <div className="p-10 text-center text-red-500">Erro.</div>;
@@ -46,9 +51,13 @@ const Dashboard: React.FC = () => {
   const total = records.length;
   const hasData = total > 0;
 
-  const coldCount = records.filter(r => r.value < thresholds.cold).length;
-  const hotCount = records.filter(r => r.value > thresholds.hot).length;
-  const normalCount = records.filter(r => r.value >= thresholds.cold && r.value <= thresholds.hot).length;
+const currentCold = Number(thresholds.cold);
+const currentHot = Number(thresholds.hot);
+
+
+const coldCount = records.filter(r => r.value < currentCold).length;
+const hotCount = records.filter(r => r.value > currentHot).length;
+const normalCount = records.filter(r => r.value >= currentCold && r.value <= currentHot).length;
 
   const pieData = hasData ? [
     { name: `Frio (<${thresholds.cold}°C)`, value: (coldCount / total) * 100 },
@@ -82,21 +91,50 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen w-full bg-[#f7f8fc] font-sans">
+  const handleColdChange = (val: string) => {
+  setThresholds((prev) => ({ ...prev, cold: val }));
+};
+
+const handleHotChange = (val: string) => {
+  setThresholds((prev) => ({ ...prev, hot: val }));
+};
+
+const handleBlurValidation = () => {
+  let coldVal = Number(thresholds.cold);
+  let hotVal = Number(thresholds.hot);
+
+  if (isNaN(coldVal)) coldVal = 10; 
+  if (isNaN(hotVal)) hotVal = 25;
+
+  if (coldVal >= hotVal) {
+    coldVal = hotVal - 1;
+  }
+
+  setThresholds({ cold: coldVal, hot: hotVal });
+};
+
+const isInvalidRange = Number(thresholds.cold) >= Number(thresholds.hot);
+
+return (
+    <div className="min-h-screen w-full bg-[#f8f9fc] font-sans text-gray-900 selection:bg-brand-purple/20">
       <Navbar />
 
       <div className="flex flex-col lg:flex-row">
-          <DashboardSidebar
-            stats={data?.statistics}
-            isLoading={isLoading}
-            onExportBoxplot={handleExportBoxplot}
-            onExportCSV={() => data?.statistics && exportToCSV(data.statistics, "SafeTemp_Stats")}
-            onExportJSON={() => data?.statistics && exportToJSON(data.statistics, "SafeTemp_Stats")}
-            onInsightSuccess={(text) => setCurrentInsight(text)}
-          />
+        <DashboardSidebar
+          isConsoleActive={showConsole}
+          onToggleConsole={() => setShowConsole(!showConsole)}
+          stats={data?.statistics}
+          isLoading={isLoading}
+          onExportBoxplot={handleExportBoxplot}
+          onExportCSV={() => data?.statistics && exportToCSV(data.statistics, "SafeTemp_Stats")}
+          onExportJSON={() => data?.statistics && exportToJSON(data.statistics, "SafeTemp_Stats")}
+          onInsightSuccess={(text) => setCurrentInsight(text)}
+        />
 
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto relative">
+          {/* Decoração de fundo sutil para preencher o espaço vazio com a identidade visual */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-purple/5 rounded-full blur-[100px] -z-10 pointer-events-none" />
+          
           <AnimatePresence>
             {currentInsight && (
               <AIInsightCard
@@ -106,26 +144,30 @@ const Dashboard: React.FC = () => {
             )}
           </AnimatePresence>
 
-          {/* Grid principal */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-20">
+          {/* Grid principal - Espaçamento otimizado */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mt-12 lg:mt-20">
 
-            {/* Gráfico de histórico — largura total em todas as telas */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white p-4 md:p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 flex flex-col group">
-              <div className="flex justify-between items-start mb-6 md:mb-8">
+            {/* 1. GRÁFICO DE HISTÓRICO (HERO CARD) */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white p-6 lg:p-8 rounded-[24px] shadow-[0_8px_40px_rgba(150,47,214,0.04)] border border-brand-purple/5 flex flex-col group relative overflow-hidden">
+              
+              <div className="flex justify-between items-start mb-8">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
-                    <h3 className="text-lg md:text-xl font-black text-[#333333] tracking-wide">Histórico</h3>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-orange opacity-40"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-brand-orange"></span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-black text-gray-900 tracking-tight">Histórico Térmico</h3>
                   </div>
-                  <p className="text-xs md:text-sm text-gray-400 font-medium">Análise térmica detalhada da última hora</p>
+                  <p className="text-sm text-gray-400 font-medium ml-6">Análise detalhada da última hora</p>
                 </div>
-                <span className="px-3 py-1 bg-gray-50 text-[10px] font-bold text-gray-400 rounded-full border border-gray-100 uppercase tracking-widest hidden sm:inline">
+                <span className="px-4 py-1.5 bg-brand-purple/5 text-[11px] font-black text-brand-purple rounded-full uppercase tracking-widest hidden sm:inline border border-brand-purple/10">
                   SafeTemp Cloud
                 </span>
               </div>
 
-              <div className="w-full h-[280px] md:h-[340px] lg:h-[400px] -ml-2 md:-ml-4">
-                {hasData ? (
+              <div className="w-full h-[280px] md:h-[340px] lg:h-[380px] -ml-2 md:-ml-4">
+                 {hasData ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                       <defs>
@@ -179,17 +221,19 @@ const Dashboard: React.FC = () => {
               </div>
 
               {hasData && (
-                <div className="grid grid-cols-3 gap-2 mt-4 md:mt-6 pt-6 md:pt-8 border-t border-gray-200">
+                <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100/60">
                   {[
-                    { label: 'Pico Registrado', val: data?.statistics.max.toFixed(1), badge: '↑ Máx', color: 'text-red-400' },
-                    { label: 'Ponto Mais Baixo', val: data?.statistics.min.toFixed(1), badge: '↓ Mín', color: 'text-blue-400' },
-                    { label: 'Média', val: data?.statistics.media.toFixed(1), badge: '↓ Média', color: 'text-blue-400' },
+                    { label: 'Pico Registrado', val: data?.statistics.max.toFixed(1), badge: '↑ Máx', color: 'text-brand-orange', bg: 'bg-brand-orange/10' },
+                    { label: 'Média', val: data?.statistics.media.toFixed(1), badge: '≈ Méd', color: 'text-brand-purple', bg: 'bg-brand-purple/10' },
+                    { label: 'Ponto Mais Baixo', val: data?.statistics.min.toFixed(1), badge: '↓ Mín', color: 'text-blue-500', bg: 'bg-blue-500/10' },
                   ].map((item, i) => (
-                    <div key={i} className="flex flex-col items-center">
-                      <span className="text-[9px] md:text-[10px] font-black uppercase text-gray-400 tracking-[0.1em] md:tracking-[0.15em] mb-1 text-center">{item.label}</span>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg md:text-2xl font-black text-[#333333]">{item.val}°</span>
-                        <span className={`text-[10px] md:text-xs font-bold ${item.color} hidden sm:inline`}>{item.badge}</span>
+                    <div key={i} className="flex flex-col items-center justify-center p-3 rounded-2xl transition-colors hover:bg-gray-50/50">
+                      <span className="text-[10px] font-bold uppercase text-gray-400 tracking-widest mb-1">{item.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl md:text-2xl font-black text-gray-900">{item.val}°</span>
+                        <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase ${item.color} ${item.bg} hidden sm:block`}>
+                          {item.badge}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -197,77 +241,113 @@ const Dashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Card de distribuição de temperatura com inputs */}
-            <div className="col-span-1 bg-white p-4 md:p-6 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.02)] flex flex-col">
-              <div className="flex justify-between items-start mb-4 md:mb-5">
-                <div>
-                  <h3 className="text-base md:text-[1.1rem] font-semibold text-[#333333]">Distribuição de Temperatura</h3>
-                  <p className="text-xs text-[#8a8a8a] mt-1">Faixas personalizadas</p>
-                </div>
-              </div>
+            <div className="col-span-1 bg-white p-6 lg:p-8 rounded-[24px] shadow-[0_8px_40px_rgba(150,47,214,0.04)] border border-brand-purple/5 flex flex-col relative overflow-hidden">
+  
+  <div className="mb-6">
+    <div className="flex justify-between items-center">
+      <h3 className="text-lg font-black text-gray-900 tracking-tight">Distribuição</h3>
+      {isInvalidRange && (
+        <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest bg-red-50 px-2 py-1 rounded-md animate-pulse">
+          Faixa Inválida
+        </span>
+      )}
+    </div>
+    <p className="text-xs text-gray-400 font-medium mt-1">Configuração de faixas térmicas</p>
+  </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-5 p-3 bg-gray-50 rounded-xl">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-blue-500 tracking-wider">Limite Frio</label>
-                  <input
-                    type="number" value={thresholds.cold}
-                    onChange={(e) => setThresholds({ ...thresholds, cold: Number(e.target.value) })}
-                    className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm font-bold outline-none focus:border-blue-400"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-red-500 tracking-wider">Limite Quente</label>
-                  <input
-                    type="number" value={thresholds.hot}
-                    onChange={(e) => setThresholds({ ...thresholds, hot: Number(e.target.value) })}
-                    className="w-full bg-white border border-gray-200 rounded-lg p-2 text-sm font-bold outline-none focus:border-red-400"
-                  />
-                </div>
-              </div>
+  <div className="flex gap-3 mb-6 relative z-10">
+    <div className={`flex-1 bg-blue-50/50 p-3 rounded-2xl transition-all border focus-within:bg-blue-50 ${
+      isInvalidRange ? 'border-red-400' : 'border-blue-100/50 focus-within:border-blue-300'
+    }`}>
+      <label className="block text-[9px] font-black uppercase text-blue-500 tracking-widest mb-1.5">Limite Frio</label>
+      <div className="flex items-center">
+        <input
+          type="number"
+          step="0.1"
+          value={thresholds.cold}
+          onChange={(e) => handleColdChange(e.target.value)}
+          onBlur={handleBlurValidation}
+          className={`w-full bg-transparent text-lg font-black outline-none ${isInvalidRange ? 'text-red-500' : 'text-gray-900'}`}
+        />
+        <span className="text-sm font-bold text-blue-300">°C</span>
+      </div>
+    </div>
 
-              {hasData ? (
-                <div className="w-full h-[200px] md:h-[250px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} dataKey="value">
-                        {pieData.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={hasData ? PIE_COLORS[index] : '#f3f4f6'} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number | undefined) => value !== undefined ? `${value.toFixed(2)}%` : '0%'} />
-                      <Legend verticalAlign="bottom" height={36} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : <div className="mt-4 flex-1"><EmptyChartState title="Distribuição por Faixa" /></div>}
+    <div className={`flex-1 bg-red-50/50 p-3 rounded-2xl transition-all border focus-within:bg-red-50 ${
+      isInvalidRange ? 'border-red-400' : 'border-red-100/50 focus-within:border-red-300'
+    }`}>
+      <label className="block text-[9px] font-black uppercase text-red-500 tracking-widest mb-1.5">Limite Quente</label>
+      <div className="flex items-center">
+        <input
+          type="number"
+          step="0.1"
+          value={thresholds.hot}
+          onChange={(e) => handleHotChange(e.target.value)}
+          onBlur={handleBlurValidation}
+          className={`w-full bg-transparent text-lg font-black outline-none ${isInvalidRange ? 'text-red-500' : 'text-gray-900'}`}
+        />
+        <span className="text-sm font-bold text-red-300">°C</span>
+      </div>
+    </div>
+  </div>
 
-              {data?.statistics && (
-                <div className="mt-auto pt-4 border-t border-gray-100 flex gap-3">
+  {hasData && !isInvalidRange ? (
+    <div className="w-full h-[220px] md:h-[240px] relative">
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[110px] h-[110px] bg-gray-50/80 rounded-full -z-10" />
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} dataKey="value" stroke="none">
+            {pieData.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={hasData ? PIE_COLORS[index] : '#f3f4f6'} />
+            ))}
+          </Pie>
+          <Tooltip 
+            formatter={(value: number | undefined) => value !== undefined ? `${value.toFixed(2)}%` : '0%'} 
+            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1)', fontWeight: 'bold' }}
+          />
+          <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8' }} />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  ) : (
+    <div className="mt-4 flex-1 flex items-center justify-center">
+      {isInvalidRange ? (
+        <div className="text-center">
+           <p className="text-sm font-bold text-red-400">Ajuste as faixas</p>
+           <p className="text-xs text-gray-400 mt-1">O limite frio deve ser menor que o quente.</p>
+        </div>
+      ) : (
+        <EmptyChartState title="Distribuição por Faixa" />
+      )}
+    </div>
+  )}
+   {data?.statistics && (
+                <div className="pt-4 border-t border-gray-100 flex gap-3">
                   <div className="flex-1 bg-gray-50 p-2 rounded-lg text-center">
                     <span className="block text-[10px] text-gray-400 font-bold uppercase">Média</span>
                     <span className="text-sm font-black text-[#4b2a59]">{data.statistics.media.toFixed(1)}°C</span>
                   </div>
                   <div className="flex-1 bg-gray-50 p-2 rounded-lg text-center">
-                    <span className="block text-[10px] text-gray-400 font-bold uppercase">Variação</span>
+                    <span className="block text-[10px] text-gray-400 font-bold uppercase">Variância</span>
                     <span className="text-sm font-black text-[#ce6e46]">{data.statistics.variancia.toFixed(1)}%</span>
                   </div>
                 </div>
               )}
-            </div>
+</div>
 
-            {/* Boxplot */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-1 bg-white p-4 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.02)] border border-gray-50 flex flex-col group">
-              <div className="flex justify-between items-start mb-4 md:mb-6">
+            {/* 3. BOXPLOT */}
+            <div className="col-span-1 lg:col-span-1 bg-white p-6 lg:p-8 rounded-[24px] shadow-[0_8px_40px_rgba(150,47,214,0.04)] border border-brand-purple/5 flex flex-col group">
+              <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h3 className="text-lg md:text-xl font-black text-[#333333] tracking-tight">Distribuição e Outliers</h3>
-                  <p className="text-xs text-gray-400 font-medium">Análise de dispersão (Boxplot)</p>
+                  <h3 className="text-lg font-black text-gray-900 tracking-tight">Dispersão (Boxplot)</h3>
+                  <p className="text-xs text-gray-400 font-medium mt-1">Análise de Outliers</p>
                 </div>
-                <div className={`p-2 rounded-xl ${data?.statistics.totalOutliers > 0 ? 'bg-red-50 text-red-400' : 'bg-green-50 text-green-400'}`}>
-                  <LuShieldAlert size={20} />
+                <div className={`p-2.5 rounded-2xl transition-colors ${data?.statistics.totalOutliers > 0 ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'}`}>
+                  <LuShieldAlert size={20} strokeWidth={2.5} />
                 </div>
               </div>
 
-              <div className="w-full h-[280px] md:h-[360px] lg:h-[400px]">
+              <div className="w-full h-[240px] md:h-[280px]">
                 {hasData ? (
                   <Plot
                     divId='boxplot-id'
@@ -275,8 +355,8 @@ const Dashboard: React.FC = () => {
                       y: values, type: 'box', name: 'Temperatura',
                       boxpoints: 'outliers', jitter: 0.5, pointpos: -1.8,
                       marker: { color: '#ce6e46', size: 6 },
-                      line: { width: 2 },
-                      fillcolor: 'rgba(206, 110, 70, 0.1)'
+                      line: { width: 2, color: '#ce6e46' },
+                      fillcolor: 'rgba(150, 47, 214, 0.05)'
                     }]}
                     layout={boxPlotLayout}
                     className="w-full h-full"
@@ -286,27 +366,27 @@ const Dashboard: React.FC = () => {
               </div>
 
               {hasData && (
-                <div className="mt-4 md:mt-6 space-y-3">
-                  <div className="flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-2xl border border-gray-100 group-hover:bg-white group-hover:shadow-lg transition-all duration-500">
+                <div className="mt-auto pt-6 space-y-3">
+                  <div className="flex items-center justify-between p-4 bg-gray-50/80 rounded-2xl group-hover:bg-brand-purple/5 transition-all duration-300">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shadow-sm text-[#ce6e46]">
-                        <LuTarget size={16} />
+                      <div className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-brand-orange">
+                        <LuTarget size={16} strokeWidth={3} />
                       </div>
-                      <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Outliers</span>
+                      <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">Outliers detectados</span>
                     </div>
-                    <span className={`text-lg font-black ${data?.statistics.totalOutliers > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                    <span className={`text-xl font-black ${data?.statistics.totalOutliers > 0 ? 'text-red-500' : 'text-green-500'}`}>
                       {data?.statistics.totalOutliers}
                     </span>
                   </div>
-
+                  
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                      <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Mediana</span>
-                      <span className="text-md font-black text-[#333333]">{data?.statistics.mediana.toFixed(2)}°C</span>
+                    <div className="px-4 py-3 bg-white border border-gray-100 rounded-2xl">
+                      <span className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Mediana</span>
+                      <span className="text-sm font-black text-gray-900">{data?.statistics.mediana.toFixed(2)}°C</span>
                     </div>
-                    <div className="p-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                      <span className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Q3 (Topo)</span>
-                      <span className="text-md font-black text-[#333333]">
+                    <div className="px-4 py-3 bg-white border border-gray-100 rounded-2xl">
+                      <span className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Q3 (Topo)</span>
+                      <span className="text-sm font-black text-gray-900">
                         {(data?.statistics.mediaNoOutlier + data?.statistics.desvioPadrao).toFixed(2)}°
                       </span>
                     </div>
@@ -315,66 +395,42 @@ const Dashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Análise Estatística — largura total */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-white p-4 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-50">
-              <div className="flex items-center justify-between mb-6 md:mb-8">
+            {/* 4. ANÁLISE ESTATÍSTICA */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-2 bg-transparent flex flex-col">
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg md:text-xl font-black text-[#333333] tracking-tight">Análise Estatística</h3>
-                  <p className="text-xs md:text-sm text-gray-400 font-medium">Indicadores de estabilidade</p>
-                </div>
-                <div className="px-3 md:px-4 py-2 bg-[#ce6e46]/10 rounded-full text-[#ce6e46] text-[10px] md:text-xs font-bold uppercase tracking-widest hidden sm:block">
-                  SafeTemp Analytics
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight">Indicadores de Estabilidade</h3>
+                  <p className="text-sm text-gray-500 font-medium mt-1">Métricas aprofundadas da estufa</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                 {[
-                  { label: 'Total de Registros', val: data?.statistics?.totalRecords ?? 0, unit: '', icon: <LuSigma /> },
-                  { label: 'Mínima Registrada', val: data?.statistics?.min ?? 0, unit: '', icon: <LucideArrowDown /> },
-                  { label: 'Máxima Registrada', val: data?.statistics?.max ?? 0, unit: '', icon: <LucideArrowUp /> },
-                  { label: 'Média Estabilizada', val: data?.statistics?.mediaNoOutlier ?? 0, unit: '°C', icon: <LuThermometer /> },
+                  { label: 'Registros', val: data?.statistics?.totalRecords ?? 0, unit: '', icon: <LuSigma /> },
+                  { label: 'Mínima', val: data?.statistics?.min ?? 0, unit: '°', icon: <LucideArrowDown /> },
+                  { label: 'Máxima', val: data?.statistics?.max ?? 0, unit: '°', icon: <LucideArrowUp /> },
+                  { label: 'Média (S/ Outlier)', val: data?.statistics?.mediaNoOutlier ?? 0, unit: '°C', icon: <LuThermometer /> },
                   { label: 'Desvio Padrão', val: data?.statistics?.desvioPadrao ?? 0, unit: '%', icon: <LuActivity /> },
-                  { label: 'CV sem Outliers', val: data?.statistics?.CVNoOutlier ?? 0, unit: '%', icon: <LuShieldCheck /> },
-                  { label: 'CV com Outliers', val: data?.statistics?.CVOutlier ?? 0, unit: '%', icon: <LuFileWarning /> },
+                  { label: 'CV (S/ Outliers)', val: data?.statistics?.CVNoOutlier ?? 0, unit: '%', icon: <LuShieldCheck /> },
+                  { label: 'CV (C/ Outliers)', val: data?.statistics?.CVOutlier ?? 0, unit: '%', icon: <LuFileWarning /> },
                 ].map((stat, i) => (
-                  <div key={i} className={`p-3 md:p-4 rounded-2xl border ${hasData ? 'bg-gray-50 border-transparent' : 'bg-white border-dashed border-gray-100 opacity-60'}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-white rounded-lg text-[#ce6e46] shrink-0">{stat.icon}</div>
-                      <div>
-                        <span className="block text-base md:text-lg font-black text-gray-800">
-                          {hasData ? stat.val.toFixed(2) : '—'}<span className="text-xs ml-0.5">{stat.unit}</span>
-                        </span>
-                        <span className="text-[10px] text-gray-400 font-bold uppercase">{stat.label}</span>
-                      </div>
-                    </div>
+                  <div key={i} className={`flex flex-col p-5 rounded-3xl transition-all ${hasData ? 'bg-white shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-gray-100/50 hover:shadow-[0_8px_30px_rgba(150,47,214,0.06)] hover:-translate-y-1' : 'bg-white/50 border-dashed border-gray-200 opacity-60'}`}>
+                    <div className="text-brand-purple mb-3 opacity-80">{stat.icon}</div>
+                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">{stat.label}</span>
+                    <span className="text-xl font-black text-gray-900">
+                      {hasData ? stat.val.toFixed(2) : '—'}<span className="text-sm ml-0.5 text-gray-400">{stat.unit}</span>
+                    </span>
                   </div>
                 ))}
-              </div>
-
-              <div className="mt-6 md:mt-8 p-4 md:p-6 bg-gradient-to-br from-[#4b2a59] to-[#2d1936] rounded-3xl text-white relative overflow-hidden group">
-                <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full blur-3xl group-hover:bg-[#ce6e46]/20 transition-all duration-500" />
-                <div className="relative z-10 flex gap-4 md:gap-5">
-                  <div className="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 bg-white/10 rounded-2xl flex items-center justify-center backdrop-blur-md">
-                    <LuLightbulb className="text-[#ce6e46]" size={22} />
-                  </div>
-                  <div className="space-y-2 md:space-y-3">
-                    <h4 className="font-bold text-base md:text-lg">Guia de Interpretação Científica</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-6 text-xs text-purple-100/80 leading-relaxed font-medium">
-                      <p>
-                        <strong className="text-white block mb-1 uppercase tracking-widest text-[10px]">Coeficiente de Variação</strong>
-                        Define a precisão relativa. Valores baixos indicam um ambiente laboratorial controlado e estável.
-                      </p>
-                      <p>
-                        <strong className="text-white block mb-1 uppercase tracking-widest text-[10px]">Outliers & Variância</strong>
-                        Pontos fora do padrão podem indicar falhas no hardware ou aberturas acidentais da estufa.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </div>        
             </div>
-
           </div>
+
+          {showConsole && (
+            <div className="mt-8 animate-in fade-in slide-in-from-bottom-8 duration-500 overflow-x-hidden w-full">
+              <SystemLogConsole />
+            </div>
+          )}
         </main>
       </div>
     </div>
